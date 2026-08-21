@@ -58,7 +58,12 @@ export default function HomePage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
-      <h1 className="mb-5 text-2xl font-semibold text-ink-200">Manga Reader</h1>
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold text-ink-200">Manga Reader</h1>
+        <Link to="/almacenamiento" className="text-sm text-ink-400 hover:text-ink-200">
+          Almacenamiento
+        </Link>
+      </div>
 
       <input
         type="search"

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { MangaDexError } from '../api/client';
 import { preloadImage } from '../api/imageLoader';
@@ -19,7 +19,7 @@ import ReaderChrome from '../components/reader/ReaderChrome';
 import VerticalReader from '../components/reader/VerticalReader';
 import Spinner from '../components/Spinner';
 import StateMessage from '../components/StateMessage';
-import { getProgress, saveProgress, saveProgressNow } from '../db';
+import { getDownload, getProgress, saveProgress, saveProgressNow } from '../db';
 import type { ProgressEntry } from '../db/schema';
 import { useAutoHide } from '../hooks/useAutoHide';
 import { useReaderSettings } from '../store/readerSettings';
@@ -38,7 +38,8 @@ export default function ReaderPage() {
   const { chapterId } = useParams<{ chapterId: string }>();
   const navigate = useNavigate();
 
-  const [chapter, setChapter] = useState<Chapter | null>(null);
+  /** Etiqueta del capítulo; sin conexión sale del registro de descarga. */
+  const [label, setLabel] = useState('');
   const [mangaId, setMangaId] = useState<string | null>(null);
   const [mangaTitle, setMangaTitle] = useState('');
   const [pages, setPages] = useState<ChapterPages>({ data: [], dataSaver: [] });
@@ -65,7 +66,7 @@ export default function ReaderPage() {
   useEffect(() => {
     if (!chapterId) return;
     const controller = new AbortController();
-    setChapter(null);
+    setLabel('');
     setNextChapter(null);
     setFeedLoaded(false);
     setPages({ data: [], dataSaver: [] });
@@ -73,26 +74,53 @@ export default function ReaderPage() {
     setError('');
 
     (async () => {
-      const current = await getChapter(chapterId, controller.signal);
+      // Un capítulo descargado tiene que abrirse sin red: sus URLs y su etiqueta
+      // ya están en IndexedDB, así que la API pasa a ser opcional.
+      const download = await getDownload(chapterId);
       if (controller.signal.aborted) return;
-      setChapter(current);
 
-      const manga = chapterManga(current);
-      setMangaId(manga?.id ?? null);
-      setMangaTitle(manga?.attributes ? pickLocalized(manga.attributes.title, '') : '');
-      if (manga?.id) {
-        // Sólo para guardar la portada junto al progreso; no bloquea la lectura.
-        void getCachedManga(manga.id, controller.signal)
-          .then((detail) => {
-            if (!controller.signal.aborted) setCover(coverUrl(detail, 256));
-          })
-          .catch(() => undefined);
+      if (download) {
+        setLabel(download.chapterLabel);
+        setMangaId(download.mangaId);
+        setMangaTitle(download.mangaTitle);
       }
 
-      const [data, dataSaver] = await Promise.all([
-        getChapterPageUrls(chapterId, 'data', controller.signal),
-        getChapterPageUrls(chapterId, 'data-saver', controller.signal),
-      ]);
+      let current: Chapter | null = null;
+      try {
+        current = await getChapter(chapterId, controller.signal);
+      } catch (cause) {
+        if (!download) throw cause;
+      }
+      if (controller.signal.aborted) return;
+
+      if (current) {
+        setLabel(buildChapterLabel(current));
+        const manga = chapterManga(current);
+        setMangaId(manga?.id ?? download?.mangaId ?? null);
+        if (manga?.attributes) setMangaTitle(pickLocalized(manga.attributes.title, ''));
+        if (manga?.id) {
+          // Sólo para guardar la portada junto al progreso; no bloquea la lectura.
+          void getCachedManga(manga.id, controller.signal)
+            .then((detail) => {
+              if (!controller.signal.aborted) setCover(coverUrl(detail, 256));
+            })
+            .catch(() => undefined);
+        }
+      }
+
+      // Las páginas descargadas se sirven por sus URLs originales: pedir un nodo
+      // nuevo devolvería direcciones que no están en la caché.
+      let data: string[];
+      let dataSaver: string[];
+      if (download) {
+        data = download.urls;
+        dataSaver = download.urls;
+      } else {
+        [data, dataSaver] = await Promise.all([
+          getChapterPageUrls(chapterId, 'data', controller.signal),
+          getChapterPageUrls(chapterId, 'data-saver', controller.signal),
+        ]);
+      }
       if (controller.signal.aborted) return;
       setPages({ data, dataSaver });
 
@@ -102,8 +130,16 @@ export default function ReaderPage() {
         setIndex(Math.min(stored.page, Math.max(0, data.length - 1)));
       }
 
-      if (!manga?.id) return;
-      const feed = await getCachedChapterFeed(manga.id, controller.signal);
+      const feedMangaId = current ? chapterManga(current)?.id : download?.mangaId;
+      if (!feedMangaId || !current) return;
+
+      // El encadenado necesita el feed; sin red simplemente no hay siguiente.
+      let feed: Chapter[];
+      try {
+        feed = await getCachedChapterFeed(feedMangaId, controller.signal);
+      } catch {
+        return;
+      }
       if (controller.signal.aborted) return;
 
       // Los vecinos se buscan dentro del mismo idioma: encadenar a otra
@@ -145,7 +181,7 @@ export default function ReaderPage() {
   const snapshot = useRef<ProgressEntry | null>(null);
 
   useEffect(() => {
-    if (!chapterId || !mangaId || !chapter || total === 0) return;
+    if (!chapterId || !mangaId || total === 0 || !label) return;
 
     snapshot.current = {
       chapterId,
@@ -155,7 +191,7 @@ export default function ReaderPage() {
       page: index,
       totalPages: total,
       completed: index >= total - 1,
-      chapterLabel: buildChapterLabel(chapter),
+      chapterLabel: label,
       updatedAt: Date.now(),
     };
 
@@ -174,7 +210,7 @@ export default function ReaderPage() {
     }
     if (pendingSave.current) return;
     pendingSave.current = setTimeout(flush, PROGRESS_THROTTLE_MS - sinceLast);
-  }, [chapterId, mangaId, mangaTitle, cover, chapter, index, total]);
+  }, [chapterId, mangaId, mangaTitle, cover, label, index, total]);
 
   // Cerrar la pestaña o dejar el lector no puede perder la última página vista.
   useEffect(() => {
@@ -263,8 +299,6 @@ export default function ReaderPage() {
       window.removeEventListener('keydown', onKeyDown);
     };
   }, []);
-
-  const label = useMemo(() => (chapter ? buildChapterLabel(chapter) : ''), [chapter]);
 
   if (error) {
     return (

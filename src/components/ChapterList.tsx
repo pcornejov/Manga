@@ -1,22 +1,33 @@
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { chapterLabel, isReadable, volumeLabel } from '../api/mangadex';
 import type { Chapter } from '../api/types';
+import { type DownloadProgress, downloadChapter, removeDownload } from '../api/downloads';
+import type { DownloadEntry, ProgressEntry } from '../db/schema';
 import { useVirtualList } from '../hooks/useVirtualList';
-import type { ProgressEntry } from '../db/schema';
 
 /** A partir de acá la lista se virtualiza. */
 const VIRTUALIZE_THRESHOLD = 200;
 const HEADER_HEIGHT = 44;
-const ROW_HEIGHT = 60;
+const ROW_HEIGHT = 64;
 
 type Row =
   | { kind: 'header'; key: string; label: string; count: number }
   | { kind: 'chapter'; key: string; chapter: Chapter };
 
+/** Estado de la descarga de un capítulo mientras está en curso. */
+type DownloadState =
+  | { kind: 'downloading'; done: number; total: number }
+  | { kind: 'deleting' }
+  | { kind: 'error'; message: string };
+
 interface ChapterListProps {
+  mangaId: string;
+  mangaTitle: string;
   chapters: Chapter[];
   progressByChapter: Map<string, ProgressEntry>;
+  downloadedChapters: Map<string, DownloadEntry>;
+  onDownloadsChange: () => void;
 }
 
 /** Aplana los capítulos a filas: un encabezado por volumen y una fila por capítulo. */
@@ -37,12 +48,78 @@ function buildRows(chapters: Chapter[]): Row[] {
   return rows;
 }
 
+function DownloadButton({
+  downloaded,
+  state,
+  onDownload,
+  onDelete,
+}: {
+  downloaded: boolean;
+  state: DownloadState | undefined;
+  onDownload: () => void;
+  onDelete: () => void;
+}) {
+  if (state?.kind === 'downloading') {
+    const percent = state.total > 0 ? Math.round((state.done / state.total) * 100) : 0;
+    return (
+      <span
+        className="relative w-24 shrink-0 overflow-hidden rounded bg-ink-700 px-2 py-1.5 text-center text-[11px] text-ink-200"
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <span
+          className="absolute inset-y-0 left-0 bg-accent/30 transition-[width] duration-200"
+          style={{ width: `${percent}%` }}
+        />
+        <span className="relative">
+          {state.done}/{state.total}
+        </span>
+      </span>
+    );
+  }
+
+  if (state?.kind === 'deleting') {
+    return <span className="w-24 shrink-0 text-center text-[11px] text-ink-400">Borrando…</span>;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        // La fila entera es un enlace al lector: el botón no puede navegar.
+        event.preventDefault();
+        event.stopPropagation();
+        if (downloaded) onDelete();
+        else onDownload();
+      }}
+      title={state?.kind === 'error' ? state.message : undefined}
+      className={`w-24 shrink-0 rounded px-2 py-1.5 text-[11px] transition-colors ${
+        downloaded
+          ? 'bg-accent/20 text-accent hover:bg-accent/30'
+          : 'bg-ink-700 text-ink-200 hover:bg-ink-600'
+      }`}
+    >
+      {state?.kind === 'error' ? 'Reintentar' : downloaded ? 'Descargado ✓' : 'Descargar'}
+    </button>
+  );
+}
+
 function ChapterRow({
   chapter,
   progress,
+  downloaded,
+  downloadState,
+  onDownload,
+  onDelete,
 }: {
   chapter: Chapter;
   progress: ProgressEntry | undefined;
+  downloaded: boolean;
+  downloadState: DownloadState | undefined;
+  onDownload: () => void;
+  onDelete: () => void;
 }) {
   const readable = isReadable(chapter);
   const read = progress?.completed === true;
@@ -72,10 +149,18 @@ function ChapterRow({
           Seguir
         </span>
       ) : null}
+      {readable ? (
+        <DownloadButton
+          downloaded={downloaded}
+          state={downloadState}
+          onDownload={onDownload}
+          onDelete={onDelete}
+        />
+      ) : null}
     </>
   );
 
-  const className = `flex h-[60px] items-center justify-between gap-3 border-b border-ink-700 px-4 ${
+  const className = `flex h-[64px] items-center justify-between gap-3 border-b border-ink-700 px-4 ${
     read ? 'bg-ink-800/40' : ''
   }`;
 
@@ -97,9 +182,67 @@ function ChapterRow({
   );
 }
 
-export default function ChapterList({ chapters, progressByChapter }: ChapterListProps) {
+export default function ChapterList({
+  mangaId,
+  mangaTitle,
+  chapters,
+  progressByChapter,
+  downloadedChapters,
+  onDownloadsChange,
+}: ChapterListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const rows = useMemo(() => buildRows(chapters), [chapters]);
+  const [downloadStates, setDownloadStates] = useState<Record<string, DownloadState>>({});
+
+  const setState = useCallback((chapterId: string, state: DownloadState | null) => {
+    setDownloadStates((current) => {
+      const next = { ...current };
+      if (state) next[chapterId] = state;
+      else delete next[chapterId];
+      return next;
+    });
+  }, []);
+
+  const startDownload = useCallback(
+    (chapter: Chapter) => {
+      setState(chapter.id, { kind: 'downloading', done: 0, total: chapter.attributes.pages });
+      void downloadChapter(
+        chapter.id,
+        mangaId,
+        mangaTitle,
+        chapterLabel(chapter),
+        (progress: DownloadProgress) => {
+          setState(chapter.id, { kind: 'downloading', ...progress });
+        },
+      )
+        .then(() => {
+          setState(chapter.id, null);
+          onDownloadsChange();
+        })
+        .catch((cause: unknown) => {
+          setState(chapter.id, {
+            kind: 'error',
+            message: cause instanceof Error ? cause.message : 'Falló la descarga.',
+          });
+        });
+    },
+    [mangaId, mangaTitle, setState, onDownloadsChange],
+  );
+
+  const startDelete = useCallback(
+    (chapterId: string) => {
+      setState(chapterId, { kind: 'deleting' });
+      void removeDownload(chapterId)
+        .then(() => {
+          setState(chapterId, null);
+          onDownloadsChange();
+        })
+        .catch(() => {
+          setState(chapterId, { kind: 'error', message: 'No se pudo borrar.' });
+        });
+    },
+    [setState, onDownloadsChange],
+  );
   const virtualized = rows.length > VIRTUALIZE_THRESHOLD;
 
   const itemHeight = (index: number): number =>
@@ -124,6 +267,14 @@ export default function ChapterList({ chapters, progressByChapter }: ChapterList
         key={row.key}
         chapter={row.chapter}
         progress={progressByChapter.get(row.chapter.id)}
+        downloaded={downloadedChapters.has(row.chapter.id)}
+        downloadState={downloadStates[row.chapter.id]}
+        onDownload={() => {
+          startDownload(row.chapter);
+        }}
+        onDelete={() => {
+          startDelete(row.chapter.id);
+        }}
       />
     );
 

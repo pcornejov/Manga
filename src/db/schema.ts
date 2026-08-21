@@ -51,6 +51,8 @@ export type SettingsEntry = GlobalSettings | MangaSettings;
 export interface DownloadEntry {
   chapterId: string;
   mangaId: string;
+  /** Copia del título: sin conexión no se puede pedir la obra. */
+  mangaTitle: string;
   chapterLabel: string;
   urls: string[];
   bytes: number;

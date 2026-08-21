@@ -54,3 +54,14 @@ Cada decisión técnica no obvia, con el porqué en una línea.
 - **`saveProgressNow` usa la base ya abierta**: una escritura que empieza después de un `await` no llega a confirmarse cuando el documento se está destruyendo.
 - **El store de preferencias escribe sin esperar**: la preferencia ya se aplicó en memoria y trabar la UI por un write a IndexedDB no aporta nada.
 - **`downloads` se crea en la versión 1 del esquema**: migrar IndexedDB por una store que ya se sabe que va a hacer falta en la fase 6 es trabajo al pedo.
+
+## Fase 6 — PWA y offline
+
+- **`generateSW` y no `injectManifest`**: un Service Worker propio necesitaría importar los paquetes `workbox-*` directamente, que son dependencias nuevas fuera del stack acordado; con las estrategias declarativas alcanza para lo pedido.
+- **Iconos generados con un script de Python en vez de una librería**: son cuatro PNG planos de placeholder y escribir el chunk IHDR/IDAT a mano evita sumar una dependencia de imágenes.
+- **El Service Worker también corre en `dev`** (`devOptions.enabled`): si no, el modo offline sólo se puede probar sobre el build y cualquier error de caché aparece recién al final.
+- **La caché de páginas de capítulo no caduca por antigüedad**: un capítulo que el usuario descargó a propósito no puede desaparecer solo a los 30 días; el tope de 3000 entradas es lo que acota la acumulación por lectura casual.
+- **La descarga escribe en la misma caché que usa el Service Worker**: así el capítulo descargado se sirve por la ruta normal de `CacheFirst`, sin lógica aparte para el modo offline.
+- **Un capítulo descargado guarda sus URLs, su etiqueta y el título de la obra**: sin conexión no se puede pedir ni `/chapter/{id}` ni `/at-home/server/{id}`, y además pedir un nodo nuevo devolvería direcciones que no están en la caché porque el `baseUrl` cambia.
+- **El lector tolera que fallen los metadatos y el feed si el capítulo está descargado**: sin red no hay título ni capítulo siguiente, pero eso no puede impedir leer lo que ya está guardado.
+- **La descarga mide bytes con `response.clone().blob()`**: el host de imágenes manda CORS, así que la respuesta no es opaca y se puede medir de verdad en lugar de estimar.

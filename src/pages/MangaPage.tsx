@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { MangaDexError } from '../api/client';
 import {
@@ -16,8 +16,14 @@ import ChapterList from '../components/ChapterList';
 import CoverImage from '../components/CoverImage';
 import Spinner from '../components/Spinner';
 import StateMessage from '../components/StateMessage';
-import { followManga, getMangaProgress, isFollowed, unfollowManga } from '../db';
-import type { ProgressEntry } from '../db/schema';
+import {
+  followManga,
+  getMangaDownloads,
+  getMangaProgress,
+  isFollowed,
+  unfollowManga,
+} from '../db';
+import type { DownloadEntry, ProgressEntry } from '../db/schema';
 
 const STATUS_LABEL: Record<MangaStatus, string> = {
   ongoing: 'En publicación',
@@ -31,10 +37,16 @@ export default function MangaPage() {
   const [manga, setManga] = useState<Manga | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [progressByChapter, setProgressByChapter] = useState<Map<string, ProgressEntry>>(new Map());
+  const [downloaded, setDownloaded] = useState<Map<string, DownloadEntry>>(new Map());
   const [followed, setFollowed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadedCount, setLoadedCount] = useState(0);
   const [error, setError] = useState('');
+
+  const refreshDownloads = useCallback(async (mangaId: string) => {
+    const entries = await getMangaDownloads(mangaId);
+    setDownloaded(new Map(entries.map((entry) => [entry.chapterId, entry])));
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -58,6 +70,7 @@ export default function MangaPage() {
 
       const progress = await getMangaProgress(id);
       setProgressByChapter(new Map(progress.map((entry) => [entry.chapterId, entry])));
+      await refreshDownloads(id);
       setLoading(false);
     })().catch((cause: unknown) => {
       if (controller.signal.aborted) return;
@@ -68,7 +81,7 @@ export default function MangaPage() {
     return () => {
       controller.abort();
     };
-  }, [id]);
+  }, [id, refreshDownloads]);
 
   if (error) {
     return (
@@ -196,7 +209,16 @@ export default function MangaPage() {
             detail="Esta obra no tiene capítulos traducidos a los idiomas configurados."
           />
         ) : (
-          <ChapterList chapters={chapters} progressByChapter={progressByChapter} />
+          <ChapterList
+            mangaId={manga.id}
+            mangaTitle={title}
+            chapters={chapters}
+            progressByChapter={progressByChapter}
+            downloadedChapters={downloaded}
+            onDownloadsChange={() => {
+              void refreshDownloads(manga.id);
+            }}
+          />
         )}
       </section>
     </main>

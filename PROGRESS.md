@@ -1,6 +1,6 @@
 # PROGRESS
 
-## Fase actual: 5 — Persistencia y progreso ✅
+## Fase actual: 6 — PWA y offline ✅ (todas las fases completas)
 
 ### Hecho
 
@@ -49,8 +49,24 @@
 - Botón de seguir / dejar de seguir en la ficha.
 - Gate: leer 7 páginas, cerrar la pestaña, reabrir y reanudar en la página exacta.
 
-### Falta
-- Fase 6 — PWA y offline.
+**Fase 6 — PWA y offline**
+- Manifest e iconos (64/192/512 + maskable), generados sin dependencias con un script propio.
+- Service Worker con `vite-plugin-pwa` (`generateSW`), activo también en `npm run dev`.
+- Estrategias: `NetworkFirst` para `api.mangadex.org` (caché de 1 día, timeout de red de 8 s),
+  `CacheFirst` para portadas (30 días) y `CacheFirst` sin caducidad para las páginas
+  de capítulo, que es donde escribe la descarga explícita.
+- Botón "Descargar" por capítulo en la ficha, con barra de progreso y borrado.
+- Pantalla `/almacenamiento`: capítulos descargados, cuánto ocupan, uso total del sitio
+  según `navigator.storage.estimate()` y borrado individual.
+- Un capítulo descargado es autosuficiente: guarda sus URLs, la etiqueta y el título de la
+  obra, así que abre sin red sin depender de la API.
+- Gate: descargar un capítulo, cortar la red, recargar y leerlo completo (11/11 páginas
+  pintadas de verdad); la home también abre sin conexión.
+
+### Pendiente / conocido
+- `uploads.mangadex.org` limita las portadas a ~5 req/s por IP y responde 403 al pasarse.
+  La app pide las portadas de a poco (`IntersectionObserver` + cola de 5 req/s) y reintenta
+  con espera creciente; bajo un límite ya saturado igual pueden quedar huecos.
 
 ## Cómo correr
 
@@ -60,4 +76,12 @@ npm run dev        # http://localhost:5173
 npm run build      # tsc -b && vite build
 npm run typecheck  # sólo TypeScript
 npm run smoke:api  # smoke test de la capa de datos contra la API real
+npm run preview    # sirve dist/ (necesario para probar el Service Worker del build)
 ```
+
+## Probar el modo offline
+
+1. `npm run build && npm run preview`
+2. Abrir la ficha de una obra y tocar **Descargar** en un capítulo.
+3. En DevTools → Network, marcar **Offline**.
+4. Recargar y abrir el capítulo: se lee completo sin red.
