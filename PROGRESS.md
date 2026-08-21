@@ -1,6 +1,8 @@
 # PROGRESS
 
-## Estado: las 6 fases completas + proxy propio para poder desplegar ✅
+## Estado: desplegado y funcionando ✅
+
+**https://manga-reader-e9q.pages.dev**
 
 ### Hecho
 
@@ -99,16 +101,46 @@ npm run smoke:api  # smoke test de la capa de datos contra la API real
 npm run preview    # sirve dist/ (necesario para probar el Service Worker del build)
 ```
 
-## Desplegar en Cloudflare Pages
+## Despliegue
 
-El proyecto ya está listo; el despliegue queda en tus manos.
+Publicado en Cloudflare Pages: **https://manga-reader-e9q.pages.dev**
+(el subdominio lleva sufijo porque `manga-reader.pages.dev` ya estaba tomado).
 
-- **Build command**: `npm run build`
-- **Output directory**: `dist`
-- **Functions**: se toman solas de `functions/`, no hay que configurar nada.
-- **No hace falta `_redirects`**: Pages hace el fallback de SPA solo porque el build no
-  incluye un `404.html` en la raíz.
-- No hay variables de entorno ni secretos.
+- **Proyecto**: `manga-reader` · **rama de producción**: `claude/manga-reader-pwa-9zevgi`
+- **No hace falta `_redirects`**: Pages hace el fallback de SPA solo, porque el build no
+  incluye un `404.html` en la raíz. Verificado en producción: `/manga/:id`, `/read/:id` y
+  `/almacenamiento` devuelven 200.
+- No hay variables de entorno ni secretos en el proyecto.
+
+### Volver a desplegar
+
+```bash
+npm run build
+CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… \
+  npx wrangler pages deploy dist --project-name=manga-reader \
+  --branch=claude/manga-reader-pwa-9zevgi
+```
+
+`wrangler` compila `functions/` al Worker como parte del deploy. El token necesita
+únicamente el permiso `Account → Cloudflare Pages → Edit`.
+
+Alternativa sin token: conectar el repo desde el dashboard (Workers & Pages → el proyecto →
+Settings → Builds → Connect to Git), con build `npm run build` y output `dist`. Queda con
+despliegue automático en cada push.
+
+### Verificado en producción
+
+- App, `sw.js` y manifest sirven 200; el Service Worker registra con scope `/` y precachea
+  9 entradas.
+- Proxy de API (`/api/*`) y de imágenes (`/img?url=`) responden 200 con portadas y páginas
+  de capítulo reales.
+- La lista blanca de `/img` rechaza con 400 host ajeno, `http`, subdominio falso
+  (`mangadex.network.ejemplo.com`) y parámetro faltante.
+- No inyecta CORS: no es utilizable como proxy desde otros sitios.
+- Recorrido completo en navegador (búsqueda 9/9 portadas → ficha → lector 1520×2400,
+  paso de página y cambio de modo) sin una sola respuesta distinta de 200 ni errores de
+  consola.
+- La app abre sin red, incluso en rutas profundas.
 
 ## Probar el modo offline
 
