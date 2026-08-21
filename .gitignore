@@ -6,3 +6,5 @@ dist-ssr
 .vite
 dev-dist
 *.tsbuildinfo
+test-results/
+playwright-report/
