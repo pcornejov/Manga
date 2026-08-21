@@ -155,3 +155,17 @@ proxear es obligatorio, para el JSON y también para las imágenes.
 - **Las secciones se pintan antes de terminar de verificar**: esperar a comprobar las 24
   dejaría la pantalla vacía varios segundos; así aparece en 1,7 s y las pocas no leíbles se
   caen solas.
+
+## Ajuste posterior — un idioma y una versión por capítulo
+
+- **La ficha muestra un solo idioma**: MangaDex mezcla `es`, `es-la` e `en` en el mismo feed,
+  así que Hunter x Hunter llegaba con 1064 filas y el capítulo 1 aparecía cinco veces. Ahora
+  se elige uno y los demás quedan detrás de un selector, que aparece sólo si hay más de uno.
+- **Entre variantes del español gana la que tenga más capítulos**: leer de corrido importa
+  más que la variante concreta; el inglés queda como último recurso, para no dejar sin nada
+  a las obras que sólo están traducidas ahí.
+- **Se deduplica por número de capítulo**: varios grupos de scanlation suben el mismo número.
+  Se queda la versión más completa (más páginas) y, a igual cantidad, la publicada primero.
+- **El encadenado se ubica por número y no por id**: la versión que se está leyendo puede no
+  ser la que sobrevivió al deduplicar, y sin esto el botón de siguiente devolvía a otra
+  traducción del capítulo recién terminado en vez de avanzar.

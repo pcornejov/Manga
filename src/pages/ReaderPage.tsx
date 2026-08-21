@@ -6,6 +6,7 @@ import {
   chapterLabel as buildChapterLabel,
   chapterManga,
   coverUrl,
+  dedupeChapters,
   getCachedChapterFeed,
   getCachedManga,
   getChapter,
@@ -142,15 +143,25 @@ export default function ReaderPage() {
       }
       if (controller.signal.aborted) return;
 
-      // Los vecinos se buscan dentro del mismo idioma: encadenar a otra
-      // traducción a mitad de la obra no tiene sentido.
-      const sameLanguage = feed
-        .filter(isReadable)
-        .filter(
-          (item) =>
-            item.attributes.translatedLanguage === current.attributes.translatedLanguage,
-        );
-      const position = sameLanguage.findIndex((item) => item.id === chapterId);
+      // Los vecinos se buscan dentro del mismo idioma y con una sola versión por
+      // número: varios grupos suben el mismo capítulo, y sin deduplicar el botón
+      // de siguiente llevaba a otra traducción del capítulo recién leído.
+      const sameLanguage = dedupeChapters(
+        feed
+          .filter(isReadable)
+          .filter(
+            (item) =>
+              item.attributes.translatedLanguage === current.attributes.translatedLanguage,
+          ),
+      ).sort((a, b) => Number(a.attributes.chapter ?? 0) - Number(b.attributes.chapter ?? 0));
+
+      // Se ubica por número y no por id: la versión que se está leyendo puede no
+      // ser la que quedó al deduplicar.
+      const currentNumber = current.attributes.chapter;
+      const position =
+        currentNumber === null
+          ? sameLanguage.findIndex((item) => item.id === chapterId)
+          : sameLanguage.findIndex((item) => item.attributes.chapter === currentNumber);
       setNextChapter(position >= 0 ? (sameLanguage[position + 1] ?? null) : null);
       setFeedLoaded(true);
     })().catch((cause: unknown) => {

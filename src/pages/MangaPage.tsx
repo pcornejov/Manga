@@ -3,12 +3,15 @@ import { Link, useParams } from 'react-router-dom';
 import { MangaDexError } from '../api/client';
 import {
   authorNames,
+  chaptersByLanguage,
   coverUrl,
+  dedupeChapters,
   getChapterFeed,
   getManga,
   mangaDescription,
   mangaTitle,
   officialReaderUrl,
+  preferredLanguage,
   tagNames,
 } from '../api/mangadex';
 import type { Chapter, Manga, MangaStatus } from '../api/types';
@@ -38,6 +41,7 @@ export default function MangaPage() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [progressByChapter, setProgressByChapter] = useState<Map<string, ProgressEntry>>(new Map());
   const [downloaded, setDownloaded] = useState<Map<string, DownloadEntry>>(new Map());
+  const [language, setLanguage] = useState<string | null>(null);
   const [officialUrl, setOfficialUrl] = useState<string | null>(null);
   const [followed, setFollowed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -55,6 +59,7 @@ export default function MangaPage() {
     setLoading(true);
     setError('');
     setLoadedCount(0);
+    setLanguage(null);
 
     (async () => {
       const detail = await getManga(id, controller.signal);
@@ -66,6 +71,7 @@ export default function MangaPage() {
       });
       if (controller.signal.aborted) return;
       setChapters(feed);
+      setLanguage(preferredLanguage(feed));
 
       // Sin capítulos leíbles, puede ser una obra licenciada: se busca el enlace
       // oficial para poder explicar el motivo en vez de dejar la ficha muda.
@@ -114,6 +120,14 @@ export default function MangaPage() {
       </main>
     );
   }
+
+  const byLanguage = chaptersByLanguage(chapters);
+  const languages = [...byLanguage.keys()];
+  // Una sola versión de cada capítulo del idioma elegido: las obras populares
+  // tienen varios grupos subiendo el mismo número.
+  const shown = dedupeChapters(language ? (byLanguage.get(language) ?? []) : []).sort(
+    (a, b) => Number(a.attributes.chapter ?? 0) - Number(b.attributes.chapter ?? 0),
+  );
 
   // Idiomas que sí tiene la obra, para explicar un listado vacío sin adivinar.
   const otherLanguages = manga.attributes.availableTranslatedLanguages.filter(
@@ -209,14 +223,37 @@ export default function MangaPage() {
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-semibold text-ink-200">
           Capítulos
-          {chapters.length > 0 ? (
-            <span className="ml-2 text-sm font-normal text-ink-400">({chapters.length})</span>
+          {shown.length > 0 ? (
+            <span className="ml-2 text-sm font-normal text-ink-400">({shown.length})</span>
           ) : null}
         </h2>
 
+        {languages.length > 1 ? (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs text-ink-400">Idioma:</span>
+            {languages.map((code) => (
+              <button
+                key={code}
+                type="button"
+                aria-pressed={code === language}
+                onClick={() => {
+                  setLanguage(code);
+                }}
+                className={`rounded-full px-2.5 py-1 text-xs transition-colors ${
+                  code === language
+                    ? 'bg-accent text-ink-900'
+                    : 'bg-ink-700 text-ink-200 hover:bg-ink-600'
+                }`}
+              >
+                {code} ({byLanguage.get(code)?.length ?? 0})
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         {loading ? (
           <Spinner label={loadedCount > 0 ? `${loadedCount} capítulos…` : 'Cargando capítulos…'} />
-        ) : chapters.length === 0 ? (
+        ) : shown.length === 0 ? (
           officialUrl ? (
             <StateMessage
               title="Obra licenciada"
@@ -246,7 +283,7 @@ export default function MangaPage() {
           <ChapterList
             mangaId={manga.id}
             mangaTitle={title}
-            chapters={chapters}
+            chapters={shown}
             progressByChapter={progressByChapter}
             downloadedChapters={downloaded}
             onDownloadsChange={() => {

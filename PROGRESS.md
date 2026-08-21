@@ -29,6 +29,8 @@
 - Las obras licenciadas (Death Note, Attack on Titan) no aparecen en los resultados: la
   búsqueda descarta las que no tienen ningún capítulo que la app pueda abrir. Si se entra
   a su ficha directamente, se explica el motivo con enlace al lector oficial.
+- La lista muestra un solo idioma (español preferido, inglés como último recurso) con
+  selector si hay más, y una sola versión por número de capítulo.
 - `ChapterList`: agrupada por volumen, virtualizada arriba de 200 filas
   (`src/hooks/useVirtualList.ts`), con los capítulos leídos y en curso marcados.
 - Gate: Bleach (979 capítulos) renderiza 15 filas en el DOM y el scroll recorre la lista

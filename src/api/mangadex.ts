@@ -359,6 +359,61 @@ export function volumeLabel(chapter: Chapter): string {
   return volume ? `Volumen ${volume}` : 'Sin volumen';
 }
 
+/** Idiomas en orden de preferencia: el español manda, el inglés es el último recurso. */
+const LANGUAGE_PREFERENCE = ['es', 'es-la', 'en'];
+
+/** Capítulos agrupados por idioma, de más traducido a menos. */
+export function chaptersByLanguage(chapters: Chapter[]): Map<string, Chapter[]> {
+  const groups = new Map<string, Chapter[]>();
+  for (const chapter of chapters) {
+    const language = chapter.attributes.translatedLanguage;
+    const group = groups.get(language);
+    if (group) group.push(chapter);
+    else groups.set(language, [chapter]);
+  }
+  return new Map(
+    [...groups.entries()].sort((a, b) => {
+      const byPreference =
+        LANGUAGE_PREFERENCE.indexOf(a[0]) - LANGUAGE_PREFERENCE.indexOf(b[0]);
+      // Entre dos variantes del español gana la que tenga más capítulos: leer de
+      // corrido importa más que la variante concreta.
+      if (a[0].startsWith('es') && b[0].startsWith('es')) return b[1].length - a[1].length;
+      return byPreference;
+    }),
+  );
+}
+
+/** Idioma con el que conviene abrir una obra. */
+export function preferredLanguage(chapters: Chapter[]): string | null {
+  return [...chaptersByLanguage(chapters).keys()][0] ?? null;
+}
+
+/**
+ * Deja una sola versión de cada capítulo.
+ *
+ * Varios grupos de scanlation suben el mismo número, así que sin esto la lista
+ * repite el capítulo 1 cinco veces y el encadenado del lector salta de una
+ * versión a otra en vez de avanzar. Se queda la más completa, y a igual cantidad
+ * de páginas, la publicada primero.
+ */
+export function dedupeChapters(chapters: Chapter[]): Chapter[] {
+  const best = new Map<string, Chapter>();
+  for (const chapter of chapters) {
+    // Los oneshots no tienen número: cada uno es su propia entrada.
+    const key = chapter.attributes.chapter ?? `id:${chapter.id}`;
+    const current = best.get(key);
+    if (!current) {
+      best.set(key, chapter);
+      continue;
+    }
+    const morePages = chapter.attributes.pages > current.attributes.pages;
+    const samePages = chapter.attributes.pages === current.attributes.pages;
+    const earlier = chapter.attributes.publishAt < current.attributes.publishAt;
+    if (morePages || (samePages && earlier)) best.set(key, chapter);
+  }
+  return [...best.values()];
+}
+
 /** Un capítulo alojado afuera o marcado como no disponible no se puede leer. */
 export function isReadable(chapter: Chapter): boolean {
   return (
