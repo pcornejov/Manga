@@ -206,3 +206,31 @@ proxear es obligatorio, para el JSON y también para las imágenes.
   de idioma, filtrado de licenciadas y ritmo del limitador no justificaba sumar Vitest.
   Lo que queda sin cubrir es el navegador (modos del lector, tope de imágenes en vuelo,
   offline), que sí necesitaría Playwright como dependencia.
+
+## Rediseño visual
+
+- **Barra de navegación inferior con tres pestañas**: en una PWA de teléfono es el patrón
+  que la gente ya conoce; antes la única navegación era un enlace de texto suelto y la
+  biblioteca estaba enterrada al final del inicio.
+- **La biblioteca pasa a ser su propia pantalla**: sacar "Continuar leyendo" y "Siguiendo"
+  del inicio deja al inicio hacer una sola cosa (descubrir y buscar) y le da sentido a la
+  barra de navegación.
+- **Los géneros van en una fila que se desplaza, no en bloque**: los 25 chips ocupaban media
+  pantalla y empujaban las portadas fuera de la vista inicial.
+- **Las secciones de descubrimiento van en carrusel horizontal**: en grilla, la tercera
+  sección quedaba a dos pantallas de scroll.
+- **Alto fijo para el título de la tarjeta**: con una o dos líneas según el título, la
+  grilla quedaba desalineada.
+- **Sin portada se dibuja la inicial de la obra**: un rectángulo gris con "Sin portada" se
+  lee como un error; una inicial se lee como una obra.
+- **La ficha usa la portada difuminada de fondo**: da identidad sin costar un pedido extra,
+  porque es la misma imagen que ya se bajó.
+- **Sinopsis recortada a cuatro líneas y etiquetas a seis**: entre las dos empujaban los
+  capítulos a la segunda pantalla; ahora la lista entra en la primera.
+- **El botón de descarga por capítulo es un icono, no una píldora con texto**: repetido en
+  cada fila, "Descargar" pesaba más que el capítulo. Durante la descarga el mismo círculo
+  hace de indicador de progreso.
+- **Las barras del lector usan degradado y sombra en el texto**: sobre fondo sólido tapaban
+  parte de la página, y sin sombra el título se perdía en los tramos claros del dibujo.
+- **`env(safe-area-inset-*)` en encabezados y barras**: en el teléfono del usuario el texto
+  se metía debajo de la barra de estado.

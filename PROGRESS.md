@@ -101,6 +101,14 @@
   imagen se pide dos veces (una al bajarla y otra al pintarla). En el build no pasa:
   medido contra el servidor, 3 portadas en pantalla = 3 salidas a MangaDex, sin repetidos.
 
+## Interfaz
+
+- Navegación inferior con tres pestañas: **Inicio** (buscar y descubrir), **Biblioteca**
+  (continuar leyendo y obras seguidas) y **Descargas**. En el lector se oculta.
+- Pensada para teléfono: respeta el notch y la barra de gestos, secciones en carrusel,
+  tarjetas alineadas, sinopsis y etiquetas recortadas, y esqueletos de carga en vez de
+  ruedas girando.
+
 ## Cómo correr
 
 ```bash

@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { ImageLoadError, loadCover } from '../api/imageLoader';
+import Icon from './Icon';
 
 interface CoverImageProps {
   src: string | null;
   alt: string;
+  /** Se usa para dibujar la inicial cuando no hay portada. */
+  title?: string;
   className?: string;
 }
 
@@ -20,7 +23,7 @@ const PRELOAD_MARGIN = '300px';
  * de portadas: `uploads.mangadex.org` responde 403 si se le piden más de cinco
  * imágenes por segundo, que es justo lo que hace una grilla sin control.
  */
-export default function CoverImage({ src, alt, className = '' }: CoverImageProps) {
+export default function CoverImage({ src, alt, title, className = '' }: CoverImageProps) {
   const holderRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [resolved, setResolved] = useState<string | null>(null);
@@ -79,18 +82,27 @@ export default function CoverImage({ src, alt, className = '' }: CoverImageProps
     };
   }, [src, visible]);
 
+  // Sin portada se dibuja la inicial: un bloque gris vacío se lee como un error,
+  // una inicial se lee como una obra.
   if (!src || failed) {
     return (
       <div
-        className={`flex items-center justify-center bg-ink-700 text-xs text-ink-400 ${className}`}
+        className={`flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-ink-700 to-ink-800 text-ink-400 ${className}`}
+        title={title ?? alt}
       >
-        Sin portada
+        {title ? (
+          <span className="text-xl font-semibold text-ink-400/80">
+            {title.trim().charAt(0).toUpperCase()}
+          </span>
+        ) : (
+          <Icon name="book" className="h-6 w-6" />
+        )}
       </div>
     );
   }
 
   return (
-    <div ref={holderRef} className={`bg-ink-700 ${className}`}>
+    <div ref={holderRef} className={`overflow-hidden bg-ink-700 ${className}`}>
       {resolved ? (
         <img
           src={resolved}
@@ -98,7 +110,9 @@ export default function CoverImage({ src, alt, className = '' }: CoverImageProps
           decoding="async"
           className="h-full w-full animate-[fadeIn_.3s_ease-in] object-cover"
         />
-      ) : null}
+      ) : (
+        <div className="h-full w-full animate-pulse bg-ink-700" />
+      )}
     </div>
   );
 }

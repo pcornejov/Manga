@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { FitMode, ReadingMode } from '../../db/schema';
+import Icon from '../Icon';
 
 interface ReaderChromeProps {
   visible: boolean;
@@ -50,8 +51,10 @@ function OptionGroup<T extends string>({
             onChange(option);
           }}
           aria-pressed={option === value}
-          className={`rounded px-2 py-1 text-xs transition-colors ${
-            option === value ? 'bg-accent text-ink-900' : 'bg-ink-700 text-ink-200 hover:bg-ink-600'
+          className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
+            option === value
+              ? 'bg-accent font-medium text-ink-900'
+              : 'bg-ink-700/80 text-ink-200 hover:bg-ink-600'
           }`}
         >
           {labels[option]}
@@ -80,25 +83,26 @@ export default function ReaderChrome({
   return (
     <>
       <header
-        className={`fixed inset-x-0 top-0 z-20 flex items-center gap-3 bg-ink-900/90 px-4 py-3 backdrop-blur transition-opacity duration-200 ${hidden}`}
+        className={`fixed inset-x-0 top-0 z-20 flex items-center gap-3 bg-gradient-to-b from-ink-900 via-ink-900/95 to-transparent px-4 pb-10 pt-safe transition-opacity duration-200 ${hidden}`}
       >
         <Link
           to={mangaId ? `/manga/${mangaId}` : '/'}
-          className="shrink-0 text-sm text-ink-400 hover:text-ink-200"
+          aria-label="Volver a la obra"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink-900/60 text-ink-200 backdrop-blur hover:text-accent"
         >
-          ← Volver
+          <Icon name="back" className="h-5 w-5" />
         </Link>
-        <div className="min-w-0">
-          <p className="truncate text-sm text-ink-200">{title}</p>
-          <p className="truncate text-xs text-ink-400">{chapterLabel}</p>
+        <div className="min-w-0 [text-shadow:0_1px_3px_rgb(11_11_15/0.9)]">
+          <p className="truncate text-sm font-medium text-ink-200">{title}</p>
+          <p className="truncate text-xs text-ink-200/70">{chapterLabel}</p>
         </div>
       </header>
 
       <footer
-        className={`fixed inset-x-0 bottom-0 z-20 flex flex-col gap-2 bg-ink-900/90 px-4 py-3 backdrop-blur transition-opacity duration-200 ${hidden}`}
+        className={`fixed inset-x-0 bottom-0 z-20 flex flex-col gap-3 bg-gradient-to-t from-ink-900 via-ink-900/95 to-transparent px-4 pb-safe pt-8 transition-opacity duration-200 ${hidden}`}
       >
         <div className="flex items-center gap-3">
-          <span className="shrink-0 text-xs tabular-nums text-ink-400">
+          <span className="shrink-0 rounded-full bg-ink-900/70 px-2 py-0.5 text-xs tabular-nums text-ink-200">
             {index + 1} / {total}
           </span>
           <input

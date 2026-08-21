@@ -3,7 +3,6 @@ import { hasReadableChapters } from '../api/mangadex';
 import type { Manga } from '../api/types';
 import { useMangaStats } from '../hooks/useMangaStats';
 import MangaCard from './MangaCard';
-import Spinner from './Spinner';
 import StateMessage from './StateMessage';
 
 interface DiscoverySectionProps {
@@ -19,10 +18,26 @@ interface DiscoverySectionProps {
   emptyDetail?: string;
 }
 
+/** Huecos del ancho de una tarjeta, para que la fila no salte al llegar los datos. */
+function Skeleton() {
+  return (
+    <div className="flex gap-3">
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} className="w-[7.5rem] shrink-0">
+          <div className="aspect-[2/3] w-full animate-pulse rounded-xl bg-ink-800" />
+          <div className="mt-2 h-3 w-4/5 animate-pulse rounded bg-ink-800" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /**
- * Fila de obras para descubrir. Las que no se pueden leer en la app se van
- * cayendo a medida que se comprueban, así la sección aparece enseguida en vez de
- * esperar a verificarlas todas.
+ * Fila de obras para descubrir.
+ *
+ * Va en carrusel horizontal y no en grilla: en el teléfono, tres secciones en
+ * grilla dejaban la tercera a dos pantallas de scroll. Las obras que no se pueden
+ * leer se van cayendo a medida que se comprueban, así la fila aparece enseguida.
  */
 export default function DiscoverySection({
   title,
@@ -73,18 +88,20 @@ export default function DiscoverySection({
   const stats = useMangaStats(visible.map((manga) => manga.id));
 
   return (
-    <section className="mt-8">
-      <h2 className="mb-3 text-lg font-semibold text-ink-200">{title}</h2>
+    <section className="mb-7">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-400">{title}</h2>
       {loading ? (
-        <Spinner />
+        <Skeleton />
       ) : failed ? (
         <StateMessage title="No se pudo cargar esta sección" />
       ) : visible.length === 0 ? (
         <StateMessage title="Nada para mostrar acá" detail={emptyDetail} />
       ) : (
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
+        <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1">
           {visible.map((manga) => (
-            <MangaCard key={manga.id} manga={manga} stats={stats.get(manga.id)} />
+            <div key={manga.id} className="w-[7.5rem] shrink-0 snap-start">
+              <MangaCard manga={manga} stats={stats.get(manga.id)} />
+            </div>
           ))}
         </div>
       )}

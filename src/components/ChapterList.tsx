@@ -5,6 +5,7 @@ import type { Chapter } from '../api/types';
 import { type DownloadProgress, downloadChapter, removeDownload } from '../api/downloads';
 import type { DownloadEntry, ProgressEntry } from '../db/schema';
 import { useVirtualList } from '../hooks/useVirtualList';
+import Icon from './Icon';
 
 /** Cuántos capítulos baja el botón de descarga múltiple. */
 const BATCH_SIZE = 5;
@@ -66,27 +67,36 @@ function DownloadButton({
     const percent = state.total > 0 ? Math.round((state.done / state.total) * 100) : 0;
     return (
       <span
-        className="relative w-24 shrink-0 overflow-hidden rounded bg-ink-700 px-2 py-1.5 text-center text-[11px] text-ink-200"
+        className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink-700 text-[10px] tabular-nums text-ink-200"
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}
         aria-valuemax={100}
+        title={`Descargando ${state.done} de ${state.total}`}
       >
         <span
-          className="absolute inset-y-0 left-0 bg-accent/30 transition-[width] duration-200"
-          style={{ width: `${percent}%` }}
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: `conic-gradient(#f97316 ${percent * 3.6}deg, transparent 0deg)`,
+            mask: 'radial-gradient(circle, transparent 58%, black 60%)',
+            WebkitMask: 'radial-gradient(circle, transparent 58%, black 60%)',
+          }}
         />
-        <span className="relative">
-          {state.done}/{state.total}
-        </span>
+        {percent}
       </span>
     );
   }
 
   if (state?.kind === 'deleting') {
-    return <span className="w-24 shrink-0 text-center text-[11px] text-ink-400">Borrando…</span>;
+    return (
+      <span className="grid h-9 w-9 shrink-0 place-items-center text-[10px] text-ink-400">…</span>
+    );
   }
 
+  const error = state?.kind === 'error';
+
+  // Icono y no una píldora con texto: con "Descargar" repetido en cada fila, el
+  // botón pesaba más que el capítulo.
   return (
     <button
       type="button"
@@ -97,14 +107,23 @@ function DownloadButton({
         if (downloaded) onDelete();
         else onDownload();
       }}
-      title={state?.kind === 'error' ? state.message : undefined}
-      className={`w-24 shrink-0 rounded px-2 py-1.5 text-[11px] transition-colors ${
+      title={
+        error
+          ? state.message
+          : downloaded
+            ? 'Descargado — tocar para borrar'
+            : 'Descargar para leer sin conexión'
+      }
+      aria-label={downloaded ? 'Borrar descarga' : 'Descargar capítulo'}
+      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors ${
         downloaded
-          ? 'bg-accent/20 text-accent hover:bg-accent/30'
-          : 'bg-ink-700 text-ink-200 hover:bg-ink-600'
+          ? 'bg-accent/15 text-accent hover:bg-accent/25'
+          : error
+            ? 'bg-ink-700 text-accent'
+            : 'text-ink-400 hover:bg-ink-700 hover:text-ink-200'
       }`}
     >
-      {state?.kind === 'error' ? 'Reintentar' : downloaded ? 'Descargado ✓' : 'Descargar'}
+      <Icon name={downloaded ? 'check' : 'download'} className="h-4 w-4" />
     </button>
   );
 }
@@ -130,26 +149,28 @@ function ChapterRow({
 
   const content = (
     <>
-      <span className="flex min-w-0 flex-col">
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span
           className={`truncate text-sm ${read ? 'text-ink-400' : 'text-ink-200'}`}
           title={chapterLabel(chapter)}
         >
           {chapterLabel(chapter)}
         </span>
-        <span className="text-xs text-ink-400">
-          {chapter.attributes.translatedLanguage} · {chapter.attributes.pages} págs
-          {started ? ` · en la página ${progress.page + 1}` : ''}
+        <span className="flex items-center gap-1.5 text-[11px] text-ink-400">
+          <span>{chapter.attributes.translatedLanguage}</span>
+          <span>·</span>
+          <span>{chapter.attributes.pages} págs</span>
+          {started ? (
+            <>
+              <span>·</span>
+              <span className="text-accent">página {progress.page + 1}</span>
+            </>
+          ) : null}
         </span>
       </span>
       {read ? (
-        <span className="shrink-0 rounded-full bg-ink-600 px-2 py-0.5 text-[11px] text-ink-200">
-          Leído
-        </span>
-      ) : null}
-      {started ? (
-        <span className="shrink-0 rounded-full bg-accent/20 px-2 py-0.5 text-[11px] text-accent">
-          Seguir
+        <span className="shrink-0 text-ink-400" title="Leído">
+          <Icon name="check" className="h-4 w-4" />
         </span>
       ) : null}
       {readable ? (
@@ -163,8 +184,8 @@ function ChapterRow({
     </>
   );
 
-  const className = `flex h-[64px] items-center justify-between gap-3 border-b border-ink-700 px-4 ${
-    read ? 'bg-ink-800/40' : ''
+  const className = `flex h-[64px] items-center gap-2 border-b border-ink-700/60 px-3 ${
+    read ? 'opacity-60' : ''
   }`;
 
   if (!readable) {
@@ -334,7 +355,7 @@ export default function ChapterList({
     row.kind === 'header' ? (
       <div
         key={row.key}
-        className="flex h-[44px] items-center bg-ink-800 px-4 text-xs font-semibold uppercase tracking-wide text-ink-400"
+        className="flex h-[44px] items-center bg-ink-800/80 px-3 text-[11px] font-semibold uppercase tracking-wide text-ink-400 backdrop-blur"
       >
         {row.label}
         <span className="ml-2 font-normal normal-case">({row.count})</span>
@@ -359,7 +380,7 @@ export default function ChapterList({
     return (
       <>
         {toolbar}
-        <div className="overflow-hidden rounded-lg border border-ink-700">
+        <div className="overflow-hidden rounded-xl border border-ink-700">
           {rows.map(renderRow)}
         </div>
       </>
@@ -371,7 +392,7 @@ export default function ChapterList({
       {toolbar}
       <div
         ref={scrollRef}
-        className="h-[70vh] overflow-y-auto rounded-lg border border-ink-700"
+        className="h-[70vh] overflow-y-auto rounded-xl border border-ink-700"
         // Contenedor propio de scroll: sin esto la ventana virtual no tiene con qué medirse.
       >
         <div style={{ height: totalHeight, position: 'relative' }}>

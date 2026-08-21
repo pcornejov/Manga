@@ -17,6 +17,7 @@ import {
 import type { Chapter, Manga, MangaStatus } from '../api/types';
 import ChapterList from '../components/ChapterList';
 import CoverImage from '../components/CoverImage';
+import Icon from '../components/Icon';
 import Spinner from '../components/Spinner';
 import StateMessage from '../components/StateMessage';
 import {
@@ -44,6 +45,8 @@ export default function MangaPage() {
   const [downloaded, setDownloaded] = useState<Map<string, DownloadEntry>>(new Map());
   const [language, setLanguage] = useState<string | null>(null);
   const [officialUrl, setOfficialUrl] = useState<string | null>(null);
+  const [expandida, setExpandida] = useState(false);
+  const [todosLosTags, setTodosLosTags] = useState(false);
   const [followed, setFollowed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadedCount, setLoadedCount] = useState(0);
@@ -160,22 +163,65 @@ export default function MangaPage() {
   const authors = authorNames(manga);
   const tags = tagNames(manga);
 
+  const TAGS_VISIBLES = 6;
+  const tagsMostrados = todosLosTags ? tags : tags.slice(0, TAGS_VISIBLES);
+
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6">
-      <Link to="/" className="mb-5 inline-block text-sm text-ink-400 hover:text-ink-200">
-        ← Buscar
-      </Link>
+    <main className="mx-auto max-w-5xl pb-safe-nav">
+      {/* La portada difuminada de fondo da identidad a la ficha sin costar un
+          pedido extra: es la misma imagen que ya se bajó. */}
+      <div className="relative">
+        <div className="absolute inset-0 h-56 overflow-hidden">
+          {cover ? (
+            <img src={cover} alt="" aria-hidden className="h-full w-full object-cover blur-2xl saturate-150 opacity-40" />
+          ) : null}
+          <div className="absolute inset-0 bg-gradient-to-b from-ink-900/40 via-ink-900/80 to-ink-900" />
+        </div>
 
-      <header className="flex flex-col gap-5 sm:flex-row">
-        <CoverImage
-          src={cover}
-          alt={`Portada de ${title}`}
-          className="aspect-[2/3] w-40 shrink-0 rounded-lg sm:w-52"
-        />
+        <div className="relative px-4 pt-safe">
+          <Link
+            to="/"
+            className="mb-4 inline-flex items-center gap-1 text-sm text-ink-200 hover:text-accent"
+          >
+            <Icon name="back" className="h-4 w-4" />
+            Volver
+          </Link>
 
-        <div className="flex min-w-0 flex-col gap-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <h1 className="text-2xl font-semibold text-ink-200">{title}</h1>
+          <header className="flex gap-4">
+            <CoverImage
+              src={cover}
+              alt={`Portada de ${title}`}
+              title={title}
+              className="aspect-[2/3] w-28 shrink-0 rounded-xl shadow-card sm:w-40"
+            />
+
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <h1 className="text-xl font-semibold leading-tight text-ink-200 sm:text-2xl">
+                {title}
+              </h1>
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-400">
+                {authors.length > 0 ? <span className="text-ink-200">{authors.join(', ')}</span> : null}
+                <span>·</span>
+                <span>{STATUS_LABEL[manga.attributes.status]}</span>
+                {manga.attributes.year !== null ? (
+                  <>
+                    <span>·</span>
+                    <span>{manga.attributes.year}</span>
+                  </>
+                ) : null}
+              </p>
+
+              {rating !== null ? (
+                <p className="flex flex-wrap items-center gap-3 text-xs text-ink-400">
+                  <span className="flex items-center gap-1 font-medium text-accent">
+                    <Icon name="star" className="h-3.5 w-3.5" />
+                    {rating.toFixed(2)}
+                  </span>
+                  {follows !== null ? <span>{follows.toLocaleString('es')} siguen</span> : null}
+                  <span>{shown.length} capítulos</span>
+                </p>
+              ) : null}
+
             <button
               type="button"
               onClick={() => {
@@ -190,74 +236,70 @@ export default function MangaPage() {
                 });
               }}
               aria-pressed={followed}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              className={`mt-1 inline-flex w-fit items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 followed
                   ? 'bg-ink-700 text-ink-200 hover:bg-ink-600'
                   : 'bg-accent text-ink-900 hover:brightness-110'
               }`}
             >
-              {followed ? 'Siguiendo ✓' : 'Seguir'}
+              {followed ? <Icon name="check" className="h-4 w-4" /> : null}
+              {followed ? 'Siguiendo' : 'Seguir'}
             </button>
-          </div>
 
-          <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink-400">
-            {authors.length > 0 ? (
-              <div className="flex gap-2">
-                <dt>Autor:</dt>
-                <dd className="text-ink-200">{authors.join(', ')}</dd>
-              </div>
-            ) : null}
-            <div className="flex gap-2">
-              <dt>Estado:</dt>
-              <dd className="text-ink-200">{STATUS_LABEL[manga.attributes.status]}</dd>
             </div>
-            {rating !== null ? (
-              <div className="flex gap-2">
-                <dt>Puntuación:</dt>
-                <dd className="tabular-nums text-accent">★ {rating.toFixed(2)} / 10</dd>
-              </div>
-            ) : null}
-            {follows !== null ? (
-              <div className="flex gap-2">
-                <dt>Siguen:</dt>
-                <dd className="tabular-nums text-ink-200">{follows.toLocaleString('es')}</dd>
-              </div>
-            ) : null}
-            {manga.attributes.year !== null ? (
-              <div className="flex gap-2">
-                <dt>Año:</dt>
-                <dd className="text-ink-200">{manga.attributes.year}</dd>
-              </div>
-            ) : null}
-          </dl>
+          </header>
 
           {tags.length > 0 ? (
-            <ul className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <li
-                  key={tag}
-                  className="rounded-full bg-ink-700 px-2.5 py-1 text-xs text-ink-200"
-                >
+            <ul className="mt-4 flex flex-wrap gap-1.5">
+              {tagsMostrados.map((tag) => (
+                <li key={tag} className="rounded-full bg-ink-700/70 px-2.5 py-1 text-[11px] text-ink-200">
                   {tag}
                 </li>
               ))}
+              {/* Trece etiquetas ocupaban tres filas antes de la sinopsis. */}
+              {!todosLosTags && tags.length > TAGS_VISIBLES ? (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTodosLosTags(true);
+                    }}
+                    className="rounded-full bg-ink-700/70 px-2.5 py-1 text-[11px] text-ink-400 hover:text-ink-200"
+                  >
+                    +{tags.length - TAGS_VISIBLES}
+                  </button>
+                </li>
+              ) : null}
             </ul>
           ) : null}
 
           {description ? (
-            <p className="whitespace-pre-line text-sm leading-relaxed text-ink-400">
-              {description}
-            </p>
+            <div className="mt-4">
+              <p
+                className={`whitespace-pre-line text-sm leading-relaxed text-ink-400 ${
+                  expandida ? '' : 'line-clamp-4'
+                }`}
+              >
+                {description}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setExpandida((current) => !current);
+                }}
+                className="mt-1 text-xs font-medium text-accent hover:underline"
+              >
+                {expandida ? 'Ver menos' : 'Ver más'}
+              </button>
+            </div>
           ) : null}
         </div>
-      </header>
+      </div>
 
-      <section className="mt-8">
-        <h2 className="mb-3 text-lg font-semibold text-ink-200">
+      <section className="mt-7 px-4">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-400">
           Capítulos
-          {shown.length > 0 ? (
-            <span className="ml-2 text-sm font-normal text-ink-400">({shown.length})</span>
-          ) : null}
+          {shown.length > 0 ? <span className="ml-2 normal-case">({shown.length})</span> : null}
         </h2>
 
         {languages.length > 1 ? (

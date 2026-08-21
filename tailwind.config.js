@@ -14,6 +14,11 @@ export default {
           200: '#c7c7d6',
         },
         accent: '#f97316',
+        // Un segundo tono cálido para degradados y estados sutiles.
+        'accent-soft': '#fb923c',
+      },
+      boxShadow: {
+        card: '0 6px 20px -8px rgba(0, 0, 0, 0.7)',
       },
     },
   },

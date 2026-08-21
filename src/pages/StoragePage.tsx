@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { type StorageUsage, estimateStorage, formatBytes, removeDownload } from '../api/downloads';
+import PageHeader from '../components/PageHeader';
 import Spinner from '../components/Spinner';
 import StateMessage from '../components/StateMessage';
 import { getDownloads } from '../db';
@@ -21,11 +22,8 @@ export default function StoragePage() {
   }, [refresh]);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
-      <Link to="/" className="mb-5 inline-block text-sm text-ink-400 hover:text-ink-200">
-        ← Inicio
-      </Link>
-      <h1 className="mb-5 text-2xl font-semibold text-ink-200">Almacenamiento</h1>
+    <main className="mx-auto max-w-3xl px-4 pb-safe-nav">
+      <PageHeader title="Descargas" />
 
       {usage ? (
         <dl className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
