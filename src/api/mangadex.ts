@@ -1,4 +1,4 @@
-import { UPLOADS_BASE, apiGet, getAtHomeServer } from './client';
+import { UPLOADS_ORIGIN, apiGet, getAtHomeServer, imageUrl } from './client';
 import type {
   Chapter,
   CollectionResponse,
@@ -139,7 +139,9 @@ export async function getChapterPageUrls(
 ): Promise<string[]> {
   const atHome = await getAtHomeServer(chapterId, signal);
   const files = quality === 'data' ? atHome.chapter.data : atHome.chapter.dataSaver;
-  return files.map((file) => `${atHome.baseUrl}/${quality}/${atHome.chapter.hash}/${file}`);
+  return files.map((file) =>
+    imageUrl(`${atHome.baseUrl}/${quality}/${atHome.chapter.hash}/${file}`),
+  );
 }
 
 // --- Helpers de presentación ---
@@ -177,7 +179,7 @@ export function coverUrl(manga: Manga, size: 256 | 512 = 512): string | null {
   const cover = findRelationship(manga.relationships, 'cover_art');
   const fileName = cover?.attributes?.fileName;
   if (!fileName) return null;
-  return `${UPLOADS_BASE}/covers/${manga.id}/${fileName}.${size}.jpg`;
+  return imageUrl(`${UPLOADS_ORIGIN}/covers/${manga.id}/${fileName}.${size}.jpg`);
 }
 
 export function authorNames(manga: Manga): string[] {

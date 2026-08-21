@@ -16,7 +16,7 @@ Cada decisión técnica no obvia, con el porqué en una línea.
 - **Dos colas anidadas para `/at-home`**: ese endpoint tiene su propio techo (40/min) *además* del global (5/s), y anidarlas hace que respete los dos sin duplicar la lógica.
 - **Un 429 pausa la cola completa, no sólo el request que lo recibió**: si uno chocó con el límite, los que venían atrás también van a chocar y quemarían sus reintentos al pedo.
 - **Deduplicación de `/at-home` en vuelo** (`atHomeInFlight`): el lector precarga páginas del mismo capítulo en paralelo y, sin esto, cada una pediría su propio nodo contra un límite de 40/min.
-- **El header `User-Agent` se manda igual aunque el navegador lo descarte**: es un *forbidden header name* del fetch spec, así que sólo tiene efecto real desde Node (el smoke test); mandarlo no cuesta nada y cumple con lo que pide MangaDex donde sí se puede.
+- **El header `User-Agent` se manda desde el cliente y desde el proxy**: es un *forbidden header name* del fetch spec, así que en el navegador lo descarta; desde Node (el smoke test) y desde las Pages Functions sí viaja, que es donde MangaDex lo exige.
 - **Tope de `offset` en 10000 en el feed**: es el máximo que acepta la API; sin el corte, una obra enorme entraría en un loop de requests que devuelven error.
 - **`isReadable()` filtra capítulos**: los que tienen `externalUrl` viven en otro sitio y los `isUnavailable` no tienen imágenes, así que mostrarlos sólo lleva al lector a una pantalla vacía.
 - **El smoke test baja por la lista de resultados**: el primer match de "Frieren" es un doujin de una página sin traducción al español, así que se busca el primer resultado que sí tenga capítulos en español.
@@ -65,3 +65,43 @@ Cada decisión técnica no obvia, con el porqué en una línea.
 - **Un capítulo descargado guarda sus URLs, su etiqueta y el título de la obra**: sin conexión no se puede pedir ni `/chapter/{id}` ni `/at-home/server/{id}`, y además pedir un nodo nuevo devolvería direcciones que no están en la caché porque el `baseUrl` cambia.
 - **El lector tolera que fallen los metadatos y el feed si el capítulo está descargado**: sin red no hay título ni capítulo siguiente, pero eso no puede impedir leer lo que ya está guardado.
 - **La descarga mide bytes con `response.clone().blob()`**: el host de imágenes manda CORS, así que la respuesta no es opaca y se puede medir de verdad en lugar de estimar.
+
+## Fase 7 — Proxy propio para poder desplegar
+
+Al preparar el despliegue apareció que la premisa original ("la API acepta CORS desde el
+navegador") sólo vale para `localhost`. Medido contra el servidor, `api.mangadex.org`
+manda `access-control-allow-origin` únicamente a orígenes `localhost` (cualquier esquema y
+puerto, pero no `127.0.0.1`) y a `mangadex.org`; a cualquier otro origen no le manda nada,
+con `vary: Origin`. Su
+[documentación](https://api.mangadex.org/docs/2-limitations/) lo confirma y va más lejos:
+proxear es obligatorio, para el JSON y también para las imágenes.
+
+- **El proxy va como Pages Functions en el mismo repo, no como servicio aparte**: es el
+  único componente de servidor que la política obliga a tener, y ponerlo junto al sitio
+  evita sumar infraestructura, dominios y CORS entre piezas propias.
+- **`/img?url=` con lista blanca en vez de una ruta por host**: el nodo de MangaDex@Home que
+  sirve un capítulo cambia con cada `/at-home/server/`, así que el host no se puede fijar en
+  la ruta. La lista blanca (`uploads.mangadex.org` y `*.mangadex.network`, sólo `https`) es
+  lo que impide que esto quede como un proxy abierto a cualquier destino.
+- **El proxy no reenvía las cabeceras del navegador**: traen `Origin`, `Referer` y cookies
+  que no corresponden, y MangaDex rechaza explícitamente las peticiones con cabecera `Via`.
+- **El proxy no inyecta CORS**: ahora todo es del mismo origen, así que no hace falta, y
+  agregarlo convertiría el sitio en un proxy CORS abierto para cualquier otra página.
+- **`cacheEverything` en la petición saliente**: la caché de Cloudflare absorbe los pedidos
+  repetidos, que es lo que más alivia el límite de 5 req/s contado por IP de salida.
+- **En el navegador la base es `/api`; desde Node se sigue yendo directo**: el smoke test
+  no está sujeto a CORS y puede poner su propio `User-Agent`, así que sigue verificando el
+  contrato real de MangaDex en lugar del de nuestro proxy.
+- **El dev server y el `preview` replican las Functions con un middleware propio**: sin eso,
+  `npm run dev` se comportaría distinto que el sitio desplegado y `npm run preview` no
+  andaría, porque las Pages Functions sólo existen dentro de Cloudflare.
+- **El middleware de dev reenvía `cache-control`**: sin él el navegador vuelve a pedir cada
+  imagen al pintarla; se detectó porque el tope de imágenes en vuelo subió de 3 a 4.
+- **Sin `_redirects`**: Cloudflare Pages ya hace el fallback de SPA solo cuando el proyecto
+  no tiene un `404.html` en la raíz, y las Functions tienen precedencia sobre los assets.
+  Un `/* /index.html 200` sería un riesgo innecesario de tapar las rutas del proxy.
+- **Las portadas se bajan con `fetch` y no con `<img>`**: `fetch` informa el código de
+  estado, y así un 403 se distingue de un fallo pasajero sin tener que repreguntar con un
+  pedido extra, que es justo lo que no hay que hacer cuando el servidor te está frenando.
+- **Ante un 403/429 no se reintenta**: MangaDex documenta que insistir después de un 429
+  escala a un bloqueo temporal de IP (que se ve como 403) y después a uno permanente.

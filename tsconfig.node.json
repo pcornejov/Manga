@@ -19,5 +19,5 @@
 
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "scripts", "tailwind.config.js", "postcss.config.js"]
+  "include": ["vite.config.ts", "scripts", "functions", "tailwind.config.js", "postcss.config.js"]
 }

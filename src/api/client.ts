@@ -1,10 +1,33 @@
 import { RequestQueue } from './rateLimiter';
 import type { AtHomeResponse, ErrorResponse } from './types';
 
-export const API_BASE = 'https://api.mangadex.org';
-export const UPLOADS_BASE = 'https://uploads.mangadex.org';
+export const UPLOADS_ORIGIN = 'https://uploads.mangadex.org';
+const API_ORIGIN = 'https://api.mangadex.org';
 
-/** Identificación pedida por MangaDex. Ver DECISIONS.md: el navegador lo descarta. */
+/**
+ * Desde el navegador todo sale por el proxy propio; desde Node (el smoke test)
+ * se va directo a MangaDex.
+ *
+ * MangaDex no manda cabeceras CORS a otros orígenes y exige un `User-Agent`
+ * identificable que el navegador no deja poner, así que un cliente 100% browser
+ * no puede cumplir su política. Ver https://api.mangadex.org/docs/2-limitations/
+ */
+const IN_BROWSER = typeof window !== 'undefined';
+
+export const API_BASE = IN_BROWSER ? `${window.location.origin}/api` : API_ORIGIN;
+
+/**
+ * Envuelve una imagen de MangaDex en el proxy propio.
+ *
+ * Hace falta porque MangaDex "sirve la respuesta incorrecta" a cualquier imagen
+ * enlazada desde otro dominio. En Node no hay proxy ni hace falta.
+ */
+export function imageUrl(upstream: string): string {
+  if (!IN_BROWSER) return upstream;
+  return `${window.location.origin}/img?url=${encodeURIComponent(upstream)}`;
+}
+
+/** Identificación pedida por MangaDex; en el navegador la pone el proxy. */
 const USER_AGENT = 'manga-reader-pwa/0.1';
 
 /** Límite global de la API. */
@@ -29,7 +52,9 @@ export class MangaDexError extends Error {
 export type QueryParams = Record<string, string | number | boolean | string[] | undefined>;
 
 export function buildUrl(path: string, params: QueryParams = {}): string {
-  const url = new URL(path, API_BASE);
+  // Concatenado y no `new URL(path, base)`: con una ruta absoluta esa forma se
+  // come el prefijo `/api` del proxy.
+  const url = new URL(`${API_BASE}${path}`);
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined) continue;
     if (Array.isArray(value)) {

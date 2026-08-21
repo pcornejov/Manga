@@ -1,6 +1,6 @@
 # PROGRESS
 
-## Fase actual: 6 — PWA y offline ✅ (todas las fases completas)
+## Estado: las 6 fases completas + proxy propio para poder desplegar ✅
 
 ### Hecho
 
@@ -64,11 +64,29 @@
 - Gate: descargar un capítulo, cortar la red, recargar y leerlo completo (11/11 páginas
   pintadas de verdad); la home también abre sin conexión.
 
+**Proxy propio (`functions/`)**
+- La premisa de que la API acepta CORS desde el navegador **sólo vale para `localhost`**.
+  MangaDex exige por documentación que las peticiones pasen por un servidor propio, tanto
+  para el JSON como para las imágenes. Ver `DECISIONS.md`.
+- `functions/api/[[path]].ts` → proxy de `/api/*` hacia `https://api.mangadex.org/*`.
+- `functions/img.ts` → proxy de `/img?url=…` con lista blanca
+  (`uploads.mangadex.org` y `*.mangadex.network`, sólo `https`).
+- Ambas ponen el `User-Agent` que MangaDex pide y que el navegador no deja poner.
+- `vite.config.ts` replica las dos rutas en el dev server y en `preview`, así el desarrollo
+  se comporta igual que el sitio desplegado.
+- Verificado ejecutando las Functions reales con Requests reales: proxy de búsqueda, feed
+  con parámetros `[]`, `/at-home/server/`, imágenes de los dos hosts, y rechazo (400) de
+  host ajeno, `http`, subdominio falso y parámetro faltante.
+
 ### Notas
-- `uploads.mangadex.org` limita las portadas a 5 req/s por IP **y no tolera ráfagas**: la
-  app las pide de a una cada 200 ms (`IntersectionObserver` + cola con separación mínima)
-  y reintenta con espera creciente. Verificado: una grilla de 20 portadas carga completa,
-  sin un solo 403.
+- `uploads.mangadex.org` limita las portadas por IP **y no tolera ráfagas**: la app las pide
+  de a una cada 200 ms (`IntersectionObserver` + cola con separación mínima). Los 403 que
+  aparecen de a ratos en desarrollo son el presupuesto por IP de la máquina, que MangaDex
+  cuenta por IP y comparte entre todos los usuarios de una red compartida; por el proxy, con
+  el `User-Agent` correcto, las mismas portadas que fallaban dan 200.
+- En `npm run dev` el Service Worker no aplica las reglas de `runtimeCaching`, así que cada
+  imagen se pide dos veces (una al bajarla y otra al pintarla). En el build no pasa:
+  medido contra el servidor, 3 portadas en pantalla = 3 salidas a MangaDex, sin repetidos.
 
 ## Cómo correr
 
@@ -80,6 +98,17 @@ npm run typecheck  # sólo TypeScript
 npm run smoke:api  # smoke test de la capa de datos contra la API real
 npm run preview    # sirve dist/ (necesario para probar el Service Worker del build)
 ```
+
+## Desplegar en Cloudflare Pages
+
+El proyecto ya está listo; el despliegue queda en tus manos.
+
+- **Build command**: `npm run build`
+- **Output directory**: `dist`
+- **Functions**: se toman solas de `functions/`, no hay que configurar nada.
+- **No hace falta `_redirects`**: Pages hace el fallback de SPA solo porque el build no
+  incluye un `404.html` en la raíz.
+- No hay variables de entorno ni secretos.
 
 ## Probar el modo offline
 

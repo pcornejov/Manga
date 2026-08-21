@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { loadCover } from '../api/imageLoader';
+import { ImageLoadError, loadCover } from '../api/imageLoader';
 
 interface CoverImageProps {
   src: string | null;
@@ -7,7 +7,7 @@ interface CoverImageProps {
   className?: string;
 }
 
-/** Reintentos antes de mostrar el hueco: el 403 del host es transitorio. */
+/** Reintentos ante fallos pasajeros. Un rechazo del servidor no se reintenta. */
 const MAX_ATTEMPTS = 3;
 const RETRY_BASE_MS = 800;
 /** Margen para empezar a bajar la portada un poco antes de que se vea. */
@@ -61,9 +61,11 @@ export default function CoverImage({ src, alt, className = '' }: CoverImageProps
           await loadCover(src);
           if (!cancelled) setResolved(src);
           return;
-        } catch {
+        } catch (cause) {
           if (cancelled) return;
-          // El 403 se pasa solo: esperar y volver a encolar alcanza.
+          // Un 403/429 significa que el servidor nos está frenando: insistir es
+          // justo lo que escala a un bloqueo permanente.
+          if (cause instanceof ImageLoadError && cause.rejected) break;
           await new Promise((wait) => {
             setTimeout(wait, RETRY_BASE_MS * 2 ** attempt);
           });

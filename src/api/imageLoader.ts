@@ -53,7 +53,25 @@ export function isLoaded(url: string): boolean {
   return loaded.has(url);
 }
 
-function fetchImage(url: string): Promise<void> {
+/**
+ * Error de carga que distingue un rechazo del servidor de un fallo pasajero.
+ *
+ * MangaDex responde 403 cuando la IP quedó bloqueada temporalmente por insistir
+ * después de un 429, y su documentación avisa que seguir pegando escala a un
+ * bloqueo definitivo. Ante un 403 hay que parar, no reintentar.
+ */
+export class ImageLoadError extends Error {
+  constructor(
+    readonly url: string,
+    readonly rejected: boolean,
+  ) {
+    super(`No se pudo cargar ${url}`);
+    this.name = 'ImageLoadError';
+  }
+}
+
+/** Carga por `<img>`: no informa el código de estado, pero no lo necesita. */
+function fetchImageElement(url: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const image = new Image();
     image.onload = () => {
@@ -61,10 +79,32 @@ function fetchImage(url: string): Promise<void> {
       resolve();
     };
     image.onerror = () => {
-      reject(new Error(`No se pudo cargar ${url}`));
+      reject(new ImageLoadError(url, false));
     };
     image.src = url;
   });
+}
+
+/**
+ * Carga por `fetch`, que sí informa el código de estado.
+ *
+ * Con `<img>` habría que repreguntar para saber si fue un 403, y ese pedido
+ * extra llega justo cuando el servidor nos está frenando. Al terminar, la imagen
+ * queda en la caché del navegador, así que pintarla después no cuesta red.
+ */
+async function fetchImageRequest(url: string): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch {
+    throw new ImageLoadError(url, false);
+  }
+  if (!response.ok) {
+    throw new ImageLoadError(url, response.status === 403 || response.status === 429);
+  }
+  // Hay que consumir el cuerpo para que la respuesta entre en la caché.
+  await response.blob();
+  loaded.add(url);
 }
 
 /** Evita que dos componentes pidan la misma URL dos veces a la vez. */
@@ -88,7 +128,7 @@ export function loadImage(url: string): Promise<void> {
   return once(url, async () => {
     await acquire();
     try {
-      await fetchImage(url);
+      await fetchImageElement(url);
     } finally {
       release();
     }
@@ -97,7 +137,7 @@ export function loadImage(url: string): Promise<void> {
 
 /** Baja una portada al ritmo que tolera `uploads.mangadex.org`. */
 export function loadCover(url: string): Promise<void> {
-  return once(url, () => coverQueue.run(() => fetchImage(url)));
+  return once(url, () => coverQueue.run(() => fetchImageRequest(url)));
 }
 
 /** Precarga sin que importe el resultado: los errores los maneja quien la pinte. */
