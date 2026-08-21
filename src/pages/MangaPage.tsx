@@ -64,7 +64,7 @@ export default function MangaPage() {
         setLoadedCount(loaded);
       });
       if (controller.signal.aborted) return;
-      setChapters(feed.filter(isReadable));
+      setChapters(feed);
 
       setFollowed(await isFollowed(id));
 
@@ -106,6 +106,12 @@ export default function MangaPage() {
       </main>
     );
   }
+
+  const readableCount = chapters.filter(isReadable).length;
+  // Idiomas que sí tiene la obra, para explicar un listado vacío sin adivinar.
+  const otherLanguages = manga.attributes.availableTranslatedLanguages.filter(
+    (language): language is string => language !== null,
+  );
 
   const title = mangaTitle(manga);
   const cover = coverUrl(manga, 512);
@@ -205,20 +211,32 @@ export default function MangaPage() {
           <Spinner label={loadedCount > 0 ? `${loadedCount} capítulos…` : 'Cargando capítulos…'} />
         ) : chapters.length === 0 ? (
           <StateMessage
-            title="Sin capítulos legibles"
-            detail="Esta obra no tiene capítulos traducidos a los idiomas configurados."
+            title="Sin capítulos en los idiomas configurados"
+            detail={
+              otherLanguages.length > 0
+                ? `La app pide español e inglés. Esta obra sólo está traducida a: ${otherLanguages.join(', ')}.`
+                : 'MangaDex no tiene capítulos publicados de esta obra.'
+            }
           />
         ) : (
-          <ChapterList
-            mangaId={manga.id}
-            mangaTitle={title}
-            chapters={chapters}
-            progressByChapter={progressByChapter}
-            downloadedChapters={downloaded}
-            onDownloadsChange={() => {
-              void refreshDownloads(manga.id);
-            }}
-          />
+          <>
+            {readableCount === 0 ? (
+              <p className="mb-3 rounded-lg border border-ink-700 bg-ink-800 px-4 py-3 text-sm text-ink-400">
+                Esta obra está licenciada, así que MangaDex no aloja las páginas: los
+                capítulos abren en el lector oficial y no se pueden descargar.
+              </p>
+            ) : null}
+            <ChapterList
+              mangaId={manga.id}
+              mangaTitle={title}
+              chapters={chapters}
+              progressByChapter={progressByChapter}
+              downloadedChapters={downloaded}
+              onDownloadsChange={() => {
+                void refreshDownloads(manga.id);
+              }}
+            />
+          </>
         )}
       </section>
     </main>

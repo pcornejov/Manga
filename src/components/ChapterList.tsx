@@ -135,7 +135,10 @@ function ChapterRow({
           {chapterLabel(chapter)}
         </span>
         <span className="text-xs text-ink-400">
-          {chapter.attributes.translatedLanguage} · {chapter.attributes.pages} págs
+          {chapter.attributes.translatedLanguage}
+          {chapter.attributes.externalUrl
+            ? ' · en el sitio oficial'
+            : ` · ${chapter.attributes.pages} págs`}
           {started ? ` · en la página ${progress.page + 1}` : ''}
         </span>
       </span>
@@ -147,6 +150,11 @@ function ChapterRow({
       {started ? (
         <span className="shrink-0 rounded-full bg-accent/20 px-2 py-0.5 text-[11px] text-accent">
           Seguir
+        </span>
+      ) : null}
+      {chapter.attributes.externalUrl ? (
+        <span className="shrink-0 rounded-full bg-ink-600 px-2 py-0.5 text-[11px] text-ink-200">
+          Oficial ↗
         </span>
       ) : null}
       {readable ? (
@@ -163,6 +171,23 @@ function ChapterRow({
   const className = `flex h-[64px] items-center justify-between gap-3 border-b border-ink-700 px-4 ${
     read ? 'bg-ink-800/40' : ''
   }`;
+
+  // Obras licenciadas: MangaDex no aloja las páginas, sólo enlaza al lector
+  // oficial. Mostrarlas como enlace es más útil que esconderlas.
+  const externalUrl = chapter.attributes.externalUrl;
+  if (externalUrl) {
+    return (
+      <a
+        href={externalUrl}
+        target="_blank"
+        rel="noreferrer noopener"
+        className={`${className} transition-colors hover:bg-ink-700`}
+        title="Se lee en el sitio oficial, fuera de la app"
+      >
+        {content}
+      </a>
+    );
+  }
 
   if (!readable) {
     return (

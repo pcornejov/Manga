@@ -117,3 +117,15 @@ proxear es obligatorio, para el JSON y también para las imágenes.
   espacio o AvPág casi una entera.
 - **La preferencia por obra se mantiene**: si en una obra se elige otro modo a propósito,
   esa elección sigue mandando sobre el default.
+
+## Ajuste posterior — obras licenciadas
+
+- **Los capítulos externos se muestran como enlace en vez de esconderse**: obras como Death
+  Note o Attack on Titan están licenciadas y MangaDex no aloja sus páginas, sólo enlaza al
+  lector oficial (MangaPlus, Viz). Filtrarlos dejaba la ficha vacía y con un mensaje que
+  además culpaba al idioma, cuando los capítulos en español sí existían.
+- **El estado vacío nombra los idiomas que la obra sí tiene**: se saca de
+  `availableTranslatedLanguages`, así el mensaje explica el motivo real en vez de dejar al
+  usuario adivinando.
+- **Los externos no ofrecen descarga ni progreso**: no hay páginas que bajar; el botón y el
+  marcado de leído sólo aparecen en los capítulos que la app puede abrir.

@@ -26,6 +26,9 @@
 - `CoverImage`: carga diferida real con `IntersectionObserver` + cola espaciada a 200 ms
   y reintentos con espera creciente.
 - Ficha: portada, título, sinopsis, autor, tags, estado, año.
+- Las obras licenciadas (Death Note, Attack on Titan) aparecen con sus capítulos como
+  enlace al lector oficial, con un aviso de por qué no se pueden leer ni descargar dentro
+  de la app.
 - `ChapterList`: agrupada por volumen, virtualizada arriba de 200 filas
   (`src/hooks/useVirtualList.ts`), con los capítulos leídos y en curso marcados.
 - Gate: Bleach (979 capítulos) renderiza 15 filas en el DOM y el scroll recorre la lista
