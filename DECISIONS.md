@@ -8,7 +8,7 @@ Cada decisión técnica no obvia, con el porqué en una línea.
 - **`tsconfig` con project references** (`app` + `node`): el código de `src` compila con libs DOM y el de `scripts`/config con tipos de Node, sin mezclar globals ni relajar `strict`.
 - **`noUncheckedIndexedAccess: true`**: el lector indexa arrays de páginas por número; que el acceso devuelva `T | undefined` evita el `pages[i].url` que revienta al final del capítulo.
 - **Paleta `ink` propia en Tailwind**: el lector necesita un fondo neutro oscuro fijo que no compita con la página del manga; los grises de Tailwind tiran a azul.
-- **Vulnerabilidades de `npm audit` sin resolver**: las 5 son de `esbuild` (sólo dev server) y `react-router` (open redirect en SSR / `deserializeErrors`), y arreglarlas exige saltar a Vite 8 y React Router 7, fuera del stack acordado; la app es client-side, sin SSR y sin rutas construidas con input del usuario.
+- **Vulnerabilidades resueltas subiendo de versión**: Vite 7, `vite-plugin-pwa` 1.x y React Router 7 dejan `npm audit` en cero. Se verificó que no rompieran nada: 17 tests unitarios, 11 E2E, build, dev, preview y el modo offline completo.
 
 ## Fase 2 — Capa de datos + rate limiter
 
@@ -234,3 +234,24 @@ proxear es obligatorio, para el JSON y también para las imágenes.
   parte de la página, y sin sombra el título se perdía en los tramos claros del dibujo.
 - **`env(safe-area-inset-*)` en encabezados y barras**: en el teléfono del usuario el texto
   se metía debajo de la barra de estado.
+
+## Mejoras finales
+
+- **El caché de "obra leíble" se persiste en IndexedDB con TTL de una semana**: en memoria
+  sola, cada arranque repetía unas sesenta verificaciones que competían con las portadas.
+  Medido: de 61 pedidos a 13 al recargar, un 79% menos.
+- **El check de cada fila es un botón**: permite marcar leído a mano, que es lo que hacía
+  falta al empezar una obra por la mitad; antes sólo se marcaba solo al llegar al final.
+- **Las descargas se agrupan por obra**: una lista plana de capítulos sueltos se vuelve
+  ilegible apenas hay dos o tres obras.
+- **La ficha cae a lo guardado en IndexedDB si la API falla**: sin red, una obra con
+  capítulos descargados sigue siendo navegable en vez de mostrar un error.
+- **Los filtros de catálogo viven en memoria y se cargan antes del render**: la capa de
+  datos los lee de forma síncrona en cada consulta, así que tienen que estar antes del
+  primer pedido. Va encadenado y no con `await` de nivel superior, que el target del build
+  no admite.
+- **Los tests E2E bloquean el Service Worker**: sus pedidos no pasan por `page.route`, así
+  que con él activo los tests salían a la API real y dependían de la red. El comportamiento
+  offline se verifica aparte, con el flag experimental de Playwright.
+- **Los E2E corren contra datos fabricados**: el contrato real de MangaDex lo verifica
+  `npm run smoke:api`; los E2E prueban la app, y por eso pasan en veinte segundos sin red.
