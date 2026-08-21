@@ -6,9 +6,9 @@ import {
   coverUrl,
   getChapterFeed,
   getManga,
-  isReadable,
   mangaDescription,
   mangaTitle,
+  officialReaderUrl,
   tagNames,
 } from '../api/mangadex';
 import type { Chapter, Manga, MangaStatus } from '../api/types';
@@ -38,6 +38,7 @@ export default function MangaPage() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [progressByChapter, setProgressByChapter] = useState<Map<string, ProgressEntry>>(new Map());
   const [downloaded, setDownloaded] = useState<Map<string, DownloadEntry>>(new Map());
+  const [officialUrl, setOfficialUrl] = useState<string | null>(null);
   const [followed, setFollowed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadedCount, setLoadedCount] = useState(0);
@@ -65,6 +66,13 @@ export default function MangaPage() {
       });
       if (controller.signal.aborted) return;
       setChapters(feed);
+
+      // Sin capítulos leíbles, puede ser una obra licenciada: se busca el enlace
+      // oficial para poder explicar el motivo en vez de dejar la ficha muda.
+      if (feed.length === 0) {
+        const official = await officialReaderUrl(id, controller.signal).catch(() => null);
+        if (!controller.signal.aborted) setOfficialUrl(official);
+      }
 
       setFollowed(await isFollowed(id));
 
@@ -107,7 +115,6 @@ export default function MangaPage() {
     );
   }
 
-  const readableCount = chapters.filter(isReadable).length;
   // Idiomas que sí tiene la obra, para explicar un listado vacío sin adivinar.
   const otherLanguages = manga.attributes.availableTranslatedLanguages.filter(
     (language): language is string => language !== null,
@@ -210,33 +217,42 @@ export default function MangaPage() {
         {loading ? (
           <Spinner label={loadedCount > 0 ? `${loadedCount} capítulos…` : 'Cargando capítulos…'} />
         ) : chapters.length === 0 ? (
-          <StateMessage
-            title="Sin capítulos en los idiomas configurados"
-            detail={
-              otherLanguages.length > 0
-                ? `La app pide español e inglés. Esta obra sólo está traducida a: ${otherLanguages.join(', ')}.`
-                : 'MangaDex no tiene capítulos publicados de esta obra.'
-            }
-          />
-        ) : (
-          <>
-            {readableCount === 0 ? (
-              <p className="mb-3 rounded-lg border border-ink-700 bg-ink-800 px-4 py-3 text-sm text-ink-400">
-                Esta obra está licenciada, así que MangaDex no aloja las páginas: los
-                capítulos abren en el lector oficial y no se pueden descargar.
-              </p>
-            ) : null}
-            <ChapterList
-              mangaId={manga.id}
-              mangaTitle={title}
-              chapters={chapters}
-              progressByChapter={progressByChapter}
-              downloadedChapters={downloaded}
-              onDownloadsChange={() => {
-                void refreshDownloads(manga.id);
-              }}
+          officialUrl ? (
+            <StateMessage
+              title="Obra licenciada"
+              detail="MangaDex no aloja las páginas de esta obra: sólo enlaza al lector oficial, así que no se puede leer ni descargar acá."
+              action={
+                <a
+                  href={officialUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-sm text-accent hover:underline"
+                >
+                  Abrir en el lector oficial ↗
+                </a>
+              }
             />
-          </>
+          ) : (
+            <StateMessage
+              title="Sin capítulos en los idiomas configurados"
+              detail={
+                otherLanguages.length > 0
+                  ? `La app pide español e inglés. Esta obra sólo está traducida a: ${otherLanguages.join(', ')}.`
+                  : 'MangaDex no tiene capítulos publicados de esta obra.'
+              }
+            />
+          )
+        ) : (
+          <ChapterList
+            mangaId={manga.id}
+            mangaTitle={title}
+            chapters={chapters}
+            progressByChapter={progressByChapter}
+            downloadedChapters={downloaded}
+            onDownloadsChange={() => {
+              void refreshDownloads(manga.id);
+            }}
+          />
         )}
       </section>
     </main>

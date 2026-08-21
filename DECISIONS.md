@@ -120,12 +120,21 @@ proxear es obligatorio, para el JSON y también para las imágenes.
 
 ## Ajuste posterior — obras licenciadas
 
-- **Los capítulos externos se muestran como enlace en vez de esconderse**: obras como Death
-  Note o Attack on Titan están licenciadas y MangaDex no aloja sus páginas, sólo enlaza al
-  lector oficial (MangaPlus, Viz). Filtrarlos dejaba la ficha vacía y con un mensaje que
-  además culpaba al idioma, cuando los capítulos en español sí existían.
+- **Los capítulos externos se filtran en el servidor con `includeExternalUrl=0`**: obras
+  como Death Note o Attack on Titan están licenciadas y MangaDex no aloja sus páginas, sólo
+  enlaza al lector oficial (MangaPlus, Viz). Como la app no puede abrirlas ni descargarlas,
+  no entran en la lista.
+- **La búsqueda comprueba obra por obra si hay algo leíble**: `hasAvailableChapters=true`
+  no sirve, porque MangaDex cuenta los externos como disponibles, y el atajo de mirar
+  `latestUploadedChapter` en lote tampoco (el último capítulo de Death Note no es externo,
+  así que se colaría). Queda un pedido de `limit=1` por resultado, cacheado por sesión, que
+  va sacando de la grilla lo que no se puede leer.
 - **El estado vacío nombra los idiomas que la obra sí tiene**: se saca de
   `availableTranslatedLanguages`, así el mensaje explica el motivo real en vez de dejar al
   usuario adivinando.
 - **Los externos no ofrecen descarga ni progreso**: no hay páginas que bajar; el botón y el
   marcado de leído sólo aparecen en los capítulos que la app puede abrir.
+
+- **La ficha de una obra licenciada explica el motivo y enlaza al lector oficial**: quedaba
+  más claro que una lista vacía, y el enlace sale de un único pedido extra que sólo se hace
+  cuando no hay nada leíble.

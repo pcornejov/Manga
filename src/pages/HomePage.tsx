@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MangaDexError } from '../api/client';
-import { searchManga } from '../api/mangadex';
+import { hasReadableChapters, searchManga } from '../api/mangadex';
 import type { Manga } from '../api/types';
 import CoverImage from '../components/CoverImage';
 import MangaCard from '../components/MangaCard';
@@ -16,6 +16,8 @@ type Status = 'idle' | 'loading' | 'done' | 'error';
 export default function HomePage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Manga[]>([]);
+  /** Obras ya descartadas por no tener capítulos que la app pueda abrir. */
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState<Status>('idle');
   const [recent, setRecent] = useState<ProgressEntry[]>([]);
   const [library, setLibrary] = useState<LibraryEntry[]>([]);
@@ -43,7 +45,20 @@ export default function HomePage() {
     searchManga(debouncedQuery, controller.signal)
       .then((found) => {
         setResults(found);
+        setHidden(new Set());
         setStatus('done');
+
+        // Las obras licenciadas sólo enlazan al lector oficial. MangaDex no deja
+        // filtrarlas en la búsqueda, así que se comprueba una por una y se van
+        // sacando de la grilla; el resultado queda cacheado por sesión.
+        for (const manga of found) {
+          void hasReadableChapters(manga.id, controller.signal)
+            .then((readable) => {
+              if (readable || controller.signal.aborted) return;
+              setHidden((current) => new Set(current).add(manga.id));
+            })
+            .catch(() => undefined);
+        }
       })
       .catch((cause: unknown) => {
         if (controller.signal.aborted) return;
@@ -55,6 +70,8 @@ export default function HomePage() {
       controller.abort();
     };
   }, [debouncedQuery]);
+
+  const visible = results.filter((manga) => !hidden.has(manga.id));
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
@@ -142,6 +159,13 @@ export default function HomePage() {
         </>
       ) : null}
 
+      {status === 'done' && visible.length === 0 && results.length > 0 ? (
+        <StateMessage
+          title="Nada que puedas leer acá"
+          detail={`Las coincidencias con "${debouncedQuery}" son obras licenciadas: MangaDex sólo enlaza al lector oficial y no aloja las páginas.`}
+        />
+      ) : null}
+
       {status === 'done' && results.length === 0 ? (
         <StateMessage
           title="Sin resultados"
@@ -149,9 +173,9 @@ export default function HomePage() {
         />
       ) : null}
 
-      {results.length > 0 ? (
+      {visible.length > 0 ? (
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {results.map((manga) => (
+          {visible.map((manga) => (
             <MangaCard key={manga.id} manga={manga} />
           ))}
         </div>

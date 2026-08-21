@@ -65,6 +65,9 @@ export async function getChapterFeed(
       {
         translatedLanguage: [...TRANSLATED_LANGUAGES],
         contentRating: CONTENT_RATING,
+        // Las obras licenciadas sólo enlazan al lector oficial: no se pueden
+        // leer ni descargar acá, así que no entran en la lista.
+        includeExternalUrl: 0,
         'order[chapter]': 'asc',
         limit: FEED_PAGE_SIZE,
         offset,
@@ -129,6 +132,58 @@ export function chapterManga(
     (relationship): relationship is Extract<Relationship, { type: 'manga' }> =>
       relationship.type === 'manga',
   );
+}
+
+/** Resultado por obra de si tiene algo leíble; se cachea por sesión. */
+const readableCache = new Map<string, boolean>();
+
+/**
+ * Si la obra tiene al menos un capítulo que la app pueda abrir.
+ *
+ * Pide una sola fila del feed ya filtrado y mira el `total`, así que es barato
+ * comparado con traerse el feed entero.
+ */
+export async function hasReadableChapters(
+  mangaId: string,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  const cached = readableCache.get(mangaId);
+  if (cached !== undefined) return cached;
+
+  const body = await apiGet<CollectionResponse<Chapter>>(
+    `/manga/${mangaId}/feed`,
+    {
+      translatedLanguage: [...TRANSLATED_LANGUAGES],
+      contentRating: CONTENT_RATING,
+      includeExternalUrl: 0,
+      limit: 1,
+    },
+    signal,
+  );
+  const readable = body.total > 0;
+  readableCache.set(mangaId, readable);
+  return readable;
+}
+
+/**
+ * Enlace al lector oficial, si la obra sólo existe como capítulos externos.
+ * Sirve para explicar una ficha vacía en vez de dejarla sin motivo.
+ */
+export async function officialReaderUrl(
+  mangaId: string,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  const body = await apiGet<CollectionResponse<Chapter>>(
+    `/manga/${mangaId}/feed`,
+    {
+      translatedLanguage: [...TRANSLATED_LANGUAGES],
+      contentRating: CONTENT_RATING,
+      limit: 1,
+      'order[chapter]': 'asc',
+    },
+    signal,
+  );
+  return body.data[0]?.attributes.externalUrl ?? null;
 }
 
 /** URLs de todas las páginas de un capítulo, en la calidad pedida. */
