@@ -64,6 +64,56 @@ export default function VerticalReader({
     container.scrollTo({ top: element.offsetTop, behavior: 'auto' });
   }, [index]);
 
+  /**
+   * Teclado en el modo continuo.
+   *
+   * El contenedor de scroll no recibe el foco, así que el navegador no scrollea
+   * solo: hay que moverlo a mano. Las flechas avanzan de a poco y espacio o
+   * AvPág saltan casi una pantalla, que es lo que se espera al leer.
+   */
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      const container = scrollRef.current;
+      if (!container) return;
+      const pantalla = container.clientHeight;
+
+      switch (event.key) {
+        case 'ArrowDown':
+          event.preventDefault();
+          container.scrollBy({ top: pantalla * 0.25, behavior: 'smooth' });
+          break;
+        case 'ArrowUp':
+          event.preventDefault();
+          container.scrollBy({ top: -pantalla * 0.25, behavior: 'smooth' });
+          break;
+        case ' ':
+        case 'PageDown':
+          event.preventDefault();
+          container.scrollBy({ top: pantalla * 0.9, behavior: 'smooth' });
+          break;
+        case 'PageUp':
+          event.preventDefault();
+          container.scrollBy({ top: -pantalla * 0.9, behavior: 'smooth' });
+          break;
+        case 'Home':
+          event.preventDefault();
+          container.scrollTo({ top: 0 });
+          break;
+        case 'End':
+          event.preventDefault();
+          container.scrollTo({ top: container.scrollHeight });
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
+
   const handleScroll = useCallback(() => {
     const container = scrollRef.current;
     if (!container) return;

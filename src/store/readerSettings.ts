@@ -7,8 +7,8 @@ interface Preferences {
   fitMode: FitMode;
 }
 
-/** RTL por default: la mayor parte del catálogo es manga japonés. */
-const DEFAULTS: Preferences = { readingMode: 'rtl', fitMode: 'width' };
+/** Scroll continuo por default: es como se lee cómodo en pantalla, sobre todo en celular. */
+const DEFAULTS: Preferences = { readingMode: 'vertical', fitMode: 'width' };
 
 interface ReaderSettingsState {
   global: Preferences;

@@ -105,3 +105,15 @@ proxear es obligatorio, para el JSON y también para las imágenes.
   pedido extra, que es justo lo que no hay que hacer cuando el servidor te está frenando.
 - **Ante un 403/429 no se reintenta**: MangaDex documenta que insistir después de un 429
   escala a un bloqueo temporal de IP (que se ve como 403) y después a uno permanente.
+
+## Ajuste posterior — lectura vertical por default
+
+- **El modo continuo pasa a ser el default**: el uso real es como PWA en el teléfono, donde
+  scrollear hacia abajo es el gesto natural; el paginado RTL quedaba mejor en escritorio
+  pero obligaba a arrastrar hacia el costado en cada página.
+- **El teclado en modo continuo se maneja a mano**: el contenedor de scroll no recibe el
+  foco, así que el navegador no scrolleaba con flechas ni con espacio; se detectó al
+  probarlo justo después de cambiar el default. Las flechas mueven un cuarto de pantalla y
+  espacio o AvPág casi una entera.
+- **La preferencia por obra se mantiene**: si en una obra se elige otro modo a propósito,
+  esa elección sigue mandando sobre el default.

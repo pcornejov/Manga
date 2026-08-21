@@ -32,8 +32,11 @@
   entera; sin errores de la app en consola y sin 429.
 
 **Fase 4 — El lector**
-- Tres modos conmutables y persistidos por obra: paginado RTL (default), LTR y continuo vertical.
-- Navegación por teclado, clic en mitades (invertido en RTL) y swipe táctil.
+- Tres modos conmutables y persistidos por obra: **continuo vertical (default)**, paginado
+  RTL y paginado LTR. El default es el continuo porque el uso real es como PWA en el
+  teléfono; se cambia desde la barra inferior y la elección queda guardada por obra.
+- Navegación por teclado, clic en mitades (invertido en RTL) y swipe táctil. En el modo
+  continuo el teclado scrollea (flechas, espacio, AvPág/RePág, Inicio/Fin).
 - Precarga de las 2 páginas siguientes; nunca el capítulo entero.
 - Zoom/pan propio con Pointer Events sobre `touch-action: none`: pinch, arrastre acotado,
   doble tap (sólo en la franja central) y ctrl+rueda.
