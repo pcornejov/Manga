@@ -15,6 +15,44 @@
   }
 }
 
+@layer components {
+  /*
+   * Píldoras: el lenguaje de toda la app. Activa usa fondo tenue en vez de
+   * naranja sólido — con tres o cuatro seguidas, el acento pleno satura y deja
+   * de señalar lo importante.
+   */
+  .chip {
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs
+      transition-colors active:scale-[0.97];
+  }
+  .chip-off {
+    @apply bg-ink-700 text-ink-200 hover:bg-ink-600;
+  }
+  .chip-on {
+    @apply bg-accent/15 text-accent ring-1 ring-inset ring-accent/40 hover:bg-accent/25;
+  }
+
+  /* El desplegable nativo se ve ajeno: se le saca el estilo y se le pone el nuestro. */
+  .select-chip {
+    @apply chip chip-off appearance-none bg-no-repeat pr-7 outline-none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7c7d6' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 0.6rem center;
+    background-size: 0.85rem;
+  }
+  .select-chip-on {
+    @apply chip chip-on appearance-none bg-no-repeat pr-7 outline-none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f97316' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 0.6rem center;
+    background-size: 0.85rem;
+  }
+
+  /* Un solo anillo de foco en toda la app. */
+  .focusable {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2
+      focus-visible:ring-offset-ink-900;
+  }
+}
+
 @layer utilities {
   /* Respeta el notch y la barra de gestos del teléfono. */
   .pt-safe {

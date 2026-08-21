@@ -77,6 +77,7 @@ export default function StoragePage() {
         <StateMessage
           title="No hay capítulos descargados"
           detail="Desde la ficha de una obra podés descargar capítulos para leerlos sin conexión."
+          icon="download"
         />
       ) : (
         <ul className="flex flex-col gap-4">

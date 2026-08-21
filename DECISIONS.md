@@ -255,3 +255,24 @@ proxear es obligatorio, para el JSON y también para las imágenes.
   offline se verifica aparte, con el flag experimental de Playwright.
 - **Los E2E corren contra datos fabricados**: el contrato real de MangaDex lo verifica
   `npm run smoke:api`; los E2E prueban la app, y por eso pasan en veinte segundos sin red.
+
+## Segundo pase visual
+
+- **Clases `.chip` / `.chip-on` / `.chip-off` en vez de repetir utilidades**: las píldoras
+  aparecen en géneros, idiomas, filtros, ajustes y la barra de capítulos; con las clases
+  sueltas ya habían empezado a divergir en padding y color.
+- **El estado activo usa fondo tenue y no naranja pleno**: con tres o cuatro píldoras
+  encendidas a la vez, el acento saturaba la pantalla y dejaba de señalar lo importante.
+- **Los `<select>` nativos se visten como píldoras** (`appearance-none` más un chevron
+  propio en SVG): se conserva el selector nativo, que en el teléfono es lo mejor para elegir,
+  pero deja de parecer un control ajeno pegado en el medio.
+- **Modo de lectura y ajuste de imagen van en una sola fila que se desplaza**: en dos filas
+  se comían media pantalla de la página que se está leyendo.
+- **La barra de acciones de la lista de capítulos también va en una fila**: eran tres, y
+  empujaban el primer capítulo fuera de la vista.
+- **Los estados vacíos llevan icono**: un párrafo suelto centrado se lee como un error de
+  carga, no como "acá todavía no hay nada".
+- **Los iconos de cada fila se aclararon**: en gris muy oscuro no se descubría que el check
+  era un botón que se puede tocar.
+- **`active:scale` en lo táctil**: sin `:hover` en el teléfono, no había ninguna respuesta
+  visible al tocar.

@@ -163,9 +163,7 @@ export default function HomePage() {
                   set(event.target.value);
                 }}
                 aria-label={label}
-                className={`shrink-0 rounded-full border-0 px-3 py-1.5 text-xs outline-none ${
-                  value ? 'bg-accent font-medium text-ink-900' : 'bg-ink-700 text-ink-200'
-                }`}
+                className={value ? 'select-chip-on' : 'select-chip'}
               >
                 <option value="">{label}</option>
                 {options.map((option) => (
@@ -182,7 +180,7 @@ export default function HomePage() {
                   setStatusFilter('');
                   setDemographic('');
                 }}
-                className="shrink-0 rounded-full bg-ink-700 px-3 py-1.5 text-xs text-ink-400 hover:text-ink-200"
+                className="chip chip-off text-ink-400 hover:text-ink-200"
               >
                 Limpiar
               </button>
@@ -196,6 +194,7 @@ export default function HomePage() {
             <StateMessage
               title="Nada que puedas leer acá"
               detail={`Las coincidencias con "${debouncedQuery}" son obras licenciadas: MangaDex sólo enlaza al lector oficial y no aloja las páginas.`}
+              icon="search"
             />
           ) : null}
 
@@ -203,15 +202,22 @@ export default function HomePage() {
             <StateMessage
               title="Sin resultados"
               detail={`No hay obras que coincidan con "${debouncedQuery}".`}
+              icon="search"
             />
           ) : null}
 
           {visible.length > 0 ? (
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
-              {visible.map((manga) => (
-                <MangaCard key={manga.id} manga={manga} stats={searchStats.get(manga.id)} />
-              ))}
-            </div>
+            <>
+              <p className="mb-3 text-xs text-ink-400">
+                {visible.length} {visible.length === 1 ? 'obra' : 'obras'}
+                {hidden.size > 0 ? ` · ${hidden.size} licenciadas ocultas` : ''}
+              </p>
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
+                {visible.map((manga) => (
+                  <MangaCard key={manga.id} manga={manga} stats={searchStats.get(manga.id)} />
+                ))}
+              </div>
+            </>
           ) : null}
         </>
       ) : (
@@ -226,7 +232,7 @@ export default function HomePage() {
                   onClick={() => {
                     setActiveGenre(null);
                   }}
-                  className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-ink-900"
+                  className="chip chip-on font-medium"
                 >
                   ✕ {pickLocalized(activeGenre.attributes.name)}
                 </button>
@@ -238,7 +244,7 @@ export default function HomePage() {
                     onClick={() => {
                       setActiveGenre(genre);
                     }}
-                    className="shrink-0 rounded-full bg-ink-700 px-3 py-1.5 text-xs text-ink-200 transition-colors hover:bg-ink-600"
+                    className="chip chip-off"
                   >
                     {pickLocalized(genre.attributes.name)}
                   </button>

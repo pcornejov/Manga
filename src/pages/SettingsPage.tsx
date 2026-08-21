@@ -38,7 +38,18 @@ export default function SettingsPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-safe-nav">
-      <PageHeader title="Ajustes" />
+      <PageHeader
+        title="Ajustes"
+        action={
+          <Link
+            to="/"
+            className="grid h-9 w-9 place-items-center rounded-full text-ink-400 hover:bg-ink-700 hover:text-ink-200"
+            aria-label="Volver al inicio"
+          >
+            <Icon name="back" className="h-5 w-5" />
+          </Link>
+        }
+      />
 
       <section className="mb-8">
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-ink-400">
@@ -62,11 +73,7 @@ export default function SettingsPage() {
                       rating,
                     );
                   }}
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors ${
-                    activo
-                      ? 'bg-accent font-medium text-ink-900'
-                      : 'bg-ink-700 text-ink-200 hover:bg-ink-600'
-                  }`}
+                  className={`chip ${activo ? 'chip-on font-medium' : 'chip-off'}`}
                 >
                   {activo ? <Icon name="check" className="h-3.5 w-3.5" /> : null}
                   {option.label}

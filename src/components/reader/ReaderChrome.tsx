@@ -42,7 +42,7 @@ function OptionGroup<T extends string>({
   label: string;
 }) {
   return (
-    <div className="flex items-center gap-1" role="group" aria-label={label}>
+    <div className="flex shrink-0 items-center gap-1" role="group" aria-label={label}>
       {options.map((option) => (
         <button
           key={option}
@@ -51,10 +51,10 @@ function OptionGroup<T extends string>({
             onChange(option);
           }}
           aria-pressed={option === value}
-          className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
+          className={`rounded-full px-3 py-1.5 text-xs transition-colors active:scale-[0.97] ${
             option === value
               ? 'bg-accent font-medium text-ink-900'
-              : 'bg-ink-700/80 text-ink-200 hover:bg-ink-600'
+              : 'bg-ink-800/80 text-ink-200 hover:bg-ink-700'
           }`}
         >
           {labels[option]}
@@ -119,7 +119,7 @@ export default function ReaderChrome({
           />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="no-scrollbar flex items-center gap-2 overflow-x-auto">
           <OptionGroup
             label="Modo de lectura"
             options={['rtl', 'ltr', 'vertical'] as const}
@@ -127,6 +127,7 @@ export default function ReaderChrome({
             labels={MODE_LABEL}
             onChange={onModeChange}
           />
+          <span aria-hidden className="h-5 w-px shrink-0 bg-ink-600" />
           <OptionGroup
             label="Ajuste de imagen"
             options={['width', 'height', 'original'] as const}

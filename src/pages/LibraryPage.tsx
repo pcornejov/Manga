@@ -28,6 +28,7 @@ export default function LibraryPage() {
         <StateMessage
           title="Todavía no hay nada acá"
           detail="Lo que empieces a leer y las obras que sigas van a aparecer en esta pantalla."
+          icon="library"
           action={
             <Link
               to="/"

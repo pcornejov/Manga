@@ -221,11 +221,16 @@ export default function MangaPage() {
       {/* La portada difuminada de fondo da identidad a la ficha sin costar un
           pedido extra: es la misma imagen que ya se bajó. */}
       <div className="relative">
-        <div className="absolute inset-0 h-56 overflow-hidden">
+        <div className="absolute inset-x-0 top-0 h-72 overflow-hidden">
           {cover ? (
-            <img src={cover} alt="" aria-hidden className="h-full w-full object-cover blur-2xl saturate-150 opacity-40" />
+            <img
+              src={cover}
+              alt=""
+              aria-hidden
+              className="h-full w-full scale-110 object-cover opacity-60 blur-3xl saturate-200"
+            />
           ) : null}
-          <div className="absolute inset-0 bg-gradient-to-b from-ink-900/40 via-ink-900/80 to-ink-900" />
+          <div className="absolute inset-0 bg-gradient-to-b from-ink-900/30 via-ink-900/75 to-ink-900" />
         </div>
 
         <div className="relative px-4 pt-safe">
@@ -314,7 +319,7 @@ export default function MangaPage() {
                     onClick={() => {
                       setTodosLosTags(true);
                     }}
-                    className="rounded-full bg-ink-700/70 px-2.5 py-1 text-[11px] text-ink-400 hover:text-ink-200"
+                    className="chip chip-off text-[11px] text-ink-400 hover:text-ink-200"
                   >
                     +{tags.length - TAGS_VISIBLES}
                   </button>
@@ -353,8 +358,8 @@ export default function MangaPage() {
         </h2>
 
         {languages.length > 1 ? (
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <span className="text-xs text-ink-400">Idioma:</span>
+          <div className="no-scrollbar -mx-4 mb-3 flex items-center gap-2 overflow-x-auto px-4">
+            <span className="shrink-0 text-xs text-ink-400">Idioma:</span>
             {languages.map((code) => (
               <button
                 key={code}
@@ -363,11 +368,7 @@ export default function MangaPage() {
                 onClick={() => {
                   setLanguage(code);
                 }}
-                className={`rounded-full px-2.5 py-1 text-xs transition-colors ${
-                  code === language
-                    ? 'bg-accent text-ink-900'
-                    : 'bg-ink-700 text-ink-200 hover:bg-ink-600'
-                }`}
+                className={`chip ${code === language ? 'chip-on font-medium' : 'chip-off'}`}
               >
                 {code} ({byLanguage.get(code)?.length ?? 0})
               </button>

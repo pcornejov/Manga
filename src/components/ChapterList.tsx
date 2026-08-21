@@ -123,7 +123,7 @@ function DownloadButton({
           ? 'bg-accent/15 text-accent hover:bg-accent/25'
           : error
             ? 'bg-ink-700 text-accent'
-            : 'text-ink-400 hover:bg-ink-700 hover:text-ink-200'
+            : 'text-ink-400/70 hover:bg-ink-700 hover:text-ink-200'
       }`}
     >
       <Icon name={downloaded ? 'check' : 'download'} className="h-4 w-4" />
@@ -184,7 +184,7 @@ function ChapterRow({
         aria-label={read ? 'Marcar como no leído' : 'Marcar como leído'}
         aria-pressed={read}
         className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors ${
-          read ? 'text-accent hover:bg-ink-700' : 'text-ink-600 hover:bg-ink-700 hover:text-ink-400'
+          read ? 'text-accent hover:bg-ink-700' : 'text-ink-400/50 hover:bg-ink-700 hover:text-ink-200'
         }`}
       >
         <Icon name="check" className="h-4 w-4" />
@@ -384,13 +384,13 @@ export default function ChapterList({
   ).length;
 
   const toolbar = (
-    <div className="mb-3 flex flex-wrap items-center gap-2">
+    <div className="no-scrollbar -mx-4 mb-3 flex items-center gap-2 overflow-x-auto px-4">
       <button
         type="button"
         onClick={() => {
           setOrder((current) => (current === 'asc' ? 'desc' : 'asc'));
         }}
-        className="rounded bg-ink-700 px-3 py-1.5 text-xs text-ink-200 transition-colors hover:bg-ink-600"
+        className="chip chip-off"
       >
         {order === 'asc' ? 'Del primero al último ↓' : 'Del último al primero ↑'}
       </button>
@@ -400,7 +400,7 @@ export default function ChapterList({
           onClick={() => {
             void markAllRead();
           }}
-          className="rounded bg-ink-700 px-3 py-1.5 text-xs text-ink-200 transition-colors hover:bg-ink-600"
+          className="chip chip-off"
         >
           Marcar todos como leídos
         </button>
@@ -412,7 +412,7 @@ export default function ChapterList({
           onClick={() => {
             void downloadBatch();
           }}
-          className="rounded bg-ink-700 px-3 py-1.5 text-xs text-ink-200 transition-colors hover:bg-ink-600 disabled:opacity-50"
+          className="chip chip-off disabled:opacity-50"
         >
           {batchRunning
             ? 'Descargando…'
