@@ -153,3 +153,17 @@ export interface AtHomeResponse {
 }
 
 export type ImageQuality = 'data' | 'data-saver';
+
+// --- Estadísticas ---
+
+export interface MangaStatistics {
+  /** Puntuación de 1 a 10. `bayesian` corrige las obras con pocos votos. */
+  rating: { average: number | null; bayesian: number | null };
+  follows: number;
+  comments: { threadId: number; repliesCount: number } | null;
+}
+
+export interface StatisticsResponse {
+  result: 'ok';
+  statistics: Record<string, MangaStatistics>;
+}

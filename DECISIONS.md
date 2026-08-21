@@ -169,3 +169,19 @@ proxear es obligatorio, para el JSON y también para las imágenes.
 - **El encadenado se ubica por número y no por id**: la versión que se está leyendo puede no
   ser la que sobrevivió al deduplicar, y sin esto el botón de siguiente devolvía a otra
   traducción del capítulo recién terminado en vez de avanzar.
+
+## Ajuste posterior — puntuaciones
+
+- **No se sumó otra fuente porque no es ahí donde está el volumen**: medido contra la API, la
+  configuración actual ya alcanza 50.102 de las 60.673 obras con capítulos de MangaDex (83%).
+  El margen restante son ~10.500, casi todas de contenido adulto o idiomas menores. Lo que
+  falta no es cantidad sino títulos concretos, y esos faltan por licencia: ninguna fuente
+  legítima los tiene, y los agregadores que sí existen precisamente para alojar lo que
+  MangaDex retira a pedido de las editoriales.
+- **Las estadísticas se piden en lote** (`/statistics/manga?manga[]=`): una grilla son 18 o
+  24 obras, y una consulta por cada una se comería el presupuesto de 5 req/s que necesitan
+  las portadas. Un solo pedido cubre hasta 40.
+- **Se muestra la puntuación bayesiana y no el promedio simple**: corrige las obras con pocos
+  votos, que si no aparecerían arriba de todo con un 10 puesto por tres personas.
+- **Las notas se pintan encima de la grilla ya renderizada**: llegan después que las obras,
+  así que esperar por ellas retrasaría la pantalla sin necesidad.

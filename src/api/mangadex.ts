@@ -6,7 +6,9 @@ import type {
   ImageQuality,
   LocalizedString,
   Manga,
+  MangaStatistics,
   Relationship,
+  StatisticsResponse,
   Tag,
 } from './types';
 
@@ -226,6 +228,54 @@ export async function getGenres(signal?: AbortSignal): Promise<Tag[]> {
     .filter((tag) => tag.attributes.group === 'genre')
     .sort((a, b) => pickLocalized(a.attributes.name).localeCompare(pickLocalized(b.attributes.name)));
   return genresCache;
+}
+
+/** Estadísticas ya pedidas. No cambian de un minuto a otro, así que basta la sesión. */
+const statsCache = new Map<string, MangaStatistics>();
+/** Tope de ids por pedido, para no armar una URL desmedida. */
+const STATS_BATCH = 40;
+
+/**
+ * Puntuación y seguidores de varias obras de una sola vez.
+ *
+ * Se pide en lote porque una grilla son 18 o 24 obras: una consulta por cada una
+ * gastaría el presupuesto de 5 req/s que necesitan las portadas.
+ */
+export async function getStatistics(
+  ids: string[],
+  signal?: AbortSignal,
+): Promise<Map<string, MangaStatistics>> {
+  const missing = [...new Set(ids)].filter((id) => !statsCache.has(id));
+
+  for (let i = 0; i < missing.length; i += STATS_BATCH) {
+    const batch = missing.slice(i, i + STATS_BATCH);
+    const body = await apiGet<StatisticsResponse>('/statistics/manga', { manga: batch }, signal);
+    for (const [id, stats] of Object.entries(body.statistics)) statsCache.set(id, stats);
+  }
+
+  const found = new Map<string, MangaStatistics>();
+  for (const id of ids) {
+    const stats = statsCache.get(id);
+    if (stats) found.set(id, stats);
+  }
+  return found;
+}
+
+/** Obras mejor puntuadas. Igual que populares, hay que filtrar las licenciadas. */
+export async function getTopRated(signal?: AbortSignal, limit = 24): Promise<Manga[]> {
+  const body = await apiGet<CollectionResponse<Manga>>(
+    '/manga',
+    {
+      'order[rating]': 'desc',
+      hasAvailableChapters: true,
+      availableTranslatedLanguage: [...TRANSLATED_LANGUAGES],
+      contentRating: CONTENT_RATING,
+      includes: ['cover_art'],
+      limit,
+    },
+    signal,
+  );
+  return body.data;
 }
 
 /** Resultado por obra de si tiene algo leíble; se cachea por sesión. */

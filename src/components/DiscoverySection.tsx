@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { hasReadableChapters } from '../api/mangadex';
 import type { Manga } from '../api/types';
+import { useMangaStats } from '../hooks/useMangaStats';
 import MangaCard from './MangaCard';
 import Spinner from './Spinner';
 import StateMessage from './StateMessage';
@@ -69,6 +70,7 @@ export default function DiscoverySection({
   }, [load, verify]);
 
   const visible = items.filter((manga) => !hidden.has(manga.id)).slice(0, max);
+  const stats = useMangaStats(visible.map((manga) => manga.id));
 
   return (
     <section className="mt-8">
@@ -82,7 +84,7 @@ export default function DiscoverySection({
       ) : (
         <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
           {visible.map((manga) => (
-            <MangaCard key={manga.id} manga={manga} />
+            <MangaCard key={manga.id} manga={manga} stats={stats.get(manga.id)} />
           ))}
         </div>
       )}

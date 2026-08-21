@@ -58,7 +58,8 @@
   espejo en `localStorage` que se reconcilia al abrir la base.
 - "Continuar leyendo" y "Siguiendo" en la pantalla de inicio, más descubrimiento:
   **Novedades** (obras con capítulos recién subidos en los idiomas configurados),
-  **Populares** y navegación por **género**, todo filtrado a lo que la app puede abrir.
+  **Mejor valoradas**, **Populares** y navegación por **género**, todo filtrado a lo que la
+  app puede abrir. Cada portada lleva su puntuación, y la ficha muestra nota y seguidores.
 - Botón de seguir / dejar de seguir en la ficha.
 - Gate: leer 7 páginas, cerrar la pestaña, reabrir y reanudar en la página exacta.
 

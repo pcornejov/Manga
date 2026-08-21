@@ -6,6 +6,7 @@ import {
   getGenres,
   getPopular,
   getRecentlyUpdated,
+  getTopRated,
   hasReadableChapters,
   pickLocalized,
   searchManga,
@@ -19,6 +20,7 @@ import StateMessage from '../components/StateMessage';
 import { getLibrary, getRecentProgress } from '../db';
 import type { LibraryEntry, ProgressEntry } from '../db/schema';
 import { useDebounce } from '../hooks/useDebounce';
+import { useMangaStats } from '../hooks/useMangaStats';
 
 type Status = 'idle' | 'loading' | 'done' | 'error';
 
@@ -44,6 +46,7 @@ export default function HomePage() {
   // Envueltos en `useCallback` para no relanzar la carga en cada render.
   const loadRecent = useCallback((signal: AbortSignal) => getRecentlyUpdated(signal), []);
   const loadPopular = useCallback((signal: AbortSignal) => getPopular(signal), []);
+  const loadTopRated = useCallback((signal: AbortSignal) => getTopRated(signal), []);
   const loadGenre = useCallback(
     (signal: AbortSignal) => getByTag(activeGenre?.id ?? '', signal),
     [activeGenre],
@@ -92,6 +95,7 @@ export default function HomePage() {
   }, [debouncedQuery]);
 
   const visible = results.filter((manga) => !hidden.has(manga.id));
+  const searchStats = useMangaStats(visible.map((manga) => manga.id));
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
@@ -210,6 +214,7 @@ export default function HomePage() {
           ) : (
             <>
               <DiscoverySection title="Novedades" load={loadRecent} />
+              <DiscoverySection title="Mejor valoradas" load={loadTopRated} verify />
               <DiscoverySection title="Populares" load={loadPopular} verify />
             </>
           )}
@@ -233,7 +238,7 @@ export default function HomePage() {
       {visible.length > 0 ? (
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {visible.map((manga) => (
-            <MangaCard key={manga.id} manga={manga} />
+            <MangaCard key={manga.id} manga={manga} stats={searchStats.get(manga.id)} />
           ))}
         </div>
       ) : null}

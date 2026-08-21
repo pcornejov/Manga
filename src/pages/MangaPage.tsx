@@ -27,6 +27,7 @@ import {
   unfollowManga,
 } from '../db';
 import type { DownloadEntry, ProgressEntry } from '../db/schema';
+import { useMangaStats } from '../hooks/useMangaStats';
 
 const STATUS_LABEL: Record<MangaStatus, string> = {
   ongoing: 'En publicación',
@@ -47,6 +48,9 @@ export default function MangaPage() {
   const [loading, setLoading] = useState(true);
   const [loadedCount, setLoadedCount] = useState(0);
   const [error, setError] = useState('');
+
+  // El hook va antes de los returns condicionales: React exige orden estable.
+  const stats = useMangaStats(id ? [id] : []);
 
   const refreshDownloads = useCallback(async (mangaId: string) => {
     const entries = await getMangaDownloads(mangaId);
@@ -134,6 +138,10 @@ export default function MangaPage() {
     (language): language is string => language !== null,
   );
 
+  const ownStats = stats.get(manga.id);
+  const rating = ownStats?.rating.bayesian ?? ownStats?.rating.average ?? null;
+  const follows = ownStats?.follows ?? null;
+
   const title = mangaTitle(manga);
   const cover = coverUrl(manga, 512);
   const description = mangaDescription(manga);
@@ -191,6 +199,18 @@ export default function MangaPage() {
               <dt>Estado:</dt>
               <dd className="text-ink-200">{STATUS_LABEL[manga.attributes.status]}</dd>
             </div>
+            {rating !== null ? (
+              <div className="flex gap-2">
+                <dt>Puntuación:</dt>
+                <dd className="tabular-nums text-accent">★ {rating.toFixed(2)} / 10</dd>
+              </div>
+            ) : null}
+            {follows !== null ? (
+              <div className="flex gap-2">
+                <dt>Siguen:</dt>
+                <dd className="tabular-nums text-ink-200">{follows.toLocaleString('es')}</dd>
+              </div>
+            ) : null}
             {manga.attributes.year !== null ? (
               <div className="flex gap-2">
                 <dt>Año:</dt>
