@@ -27,6 +27,10 @@ import { useReaderSettings } from '../store/readerSettings';
 
 /** Páginas que se van bajando por delante de la actual. */
 const PRELOAD_AHEAD = 2;
+/** A cuántas páginas del final se empieza a bajar el capítulo siguiente. */
+const NEXT_CHAPTER_PRELOAD_AT = 3;
+/** Cuántas páginas de ese capítulo se adelantan. */
+const NEXT_CHAPTER_PRELOAD_PAGES = 2;
 /** Pasar páginas rápido no debe escribir en IndexedDB una vez por página. */
 const PROGRESS_THROTTLE_MS = 1_000;
 
@@ -185,6 +189,26 @@ export default function ReaderPage() {
     }
   }, [index, pages.data]);
 
+  // Cerca del final se van bajando las primeras páginas del capítulo siguiente,
+  // para que encadenar no arranque desde cero. Pasa por el mismo semáforo, así
+  // que nunca compite con la página que se está mirando.
+  useEffect(() => {
+    if (!nextChapter || total === 0) return;
+    if (index < total - NEXT_CHAPTER_PRELOAD_AT) return;
+
+    let cancelled = false;
+    getChapterPageUrls(nextChapter.id, 'data')
+      .then((urls) => {
+        if (cancelled) return;
+        for (const url of urls.slice(0, NEXT_CHAPTER_PRELOAD_PAGES)) preloadImage(url);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [index, total, nextChapter]);
+
   // Guardado de progreso con throttle: escribe como mucho una vez por segundo y
   // deja siempre pendiente el último valor, que es el que importa.
   const lastSavedAt = useRef(0);
@@ -339,6 +363,9 @@ export default function ReaderPage() {
           fitMode={fitMode}
           onIndexChange={goTo}
           onToggleChrome={chrome.toggle}
+          onReachEnd={() => {
+            if (nextChapter) navigate(`/read/${nextChapter.id}`);
+          }}
         />
       ) : (
         <PagedReader

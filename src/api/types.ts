@@ -100,6 +100,8 @@ export interface MangaAttributes {
   contentRating: ContentRating;
   tags: Tag[];
   availableTranslatedLanguages: Array<string | null>;
+  /** Id del capítulo subido más recientemente, en cualquier idioma. */
+  latestUploadedChapter: string | null;
   createdAt: string;
   updatedAt: string;
   version: number;

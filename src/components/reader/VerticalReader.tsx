@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from 'react';
 import type { FitMode } from '../../db/schema';
 import PageImage from './PageImage';
 
@@ -9,12 +9,18 @@ interface VerticalReaderProps {
   fitMode: FitMode;
   onIndexChange: (index: number) => void;
   onToggleChrome: () => void;
+  /** Se llama al insistir con el scroll estando ya al final del capítulo. */
+  onReachEnd?: () => void;
 }
 
 /** Páginas por delante y por detrás que se montan (y por lo tanto se bajan). */
 const WINDOW = 1;
 /** Alto tentativo de una página todavía no montada, en fracción del ancho. */
 const PLACEHOLDER_RATIO = 1.4;
+/** Cuánto hay que seguir empujando más allá del final para encadenar. */
+const OVERSCROLL_TO_CHAIN = 120;
+const MIN_SCALE = 1;
+const MAX_SCALE = 3;
 
 /**
  * Lector continuo (webtoon).
@@ -30,6 +36,7 @@ export default function VerticalReader({
   fitMode,
   onIndexChange,
   onToggleChrome,
+  onReachEnd,
 }: VerticalReaderProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -130,6 +137,7 @@ export default function VerticalReader({
       return;
     }
 
+
     const position = container.scrollTop + container.clientHeight * 0.25;
 
     let current = 0;
@@ -142,14 +150,85 @@ export default function VerticalReader({
     onIndexChange(current);
   }, [onIndexChange, pages.length]);
 
+  /**
+   * Pinch para agrandar.
+   *
+   * Se cambia el ancho de la columna en vez de aplicar `transform`: así crecen
+   * también `scrollWidth` y `scrollHeight`, y el scroll del navegador sigue
+   * sirviendo en los dos ejes. Con `transform` habría que reimplementarlo.
+   */
+  const [scale, setScale] = useState(1);
+  const pinch = useRef(new Map<number, { x: number; y: number }>());
+  const pinchStart = useRef<{ distance: number; scale: number } | null>(null);
+
+  const onPointerDown = useCallback((event: ReactPointerEvent) => {
+    pinch.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pinch.current.size === 2) {
+      const [a, b] = [...pinch.current.values()];
+      if (a && b) {
+        pinchStart.current = { distance: Math.hypot(a.x - b.x, a.y - b.y), scale };
+      }
+    }
+  }, [scale]);
+
+  const onPointerMove = useCallback((event: ReactPointerEvent) => {
+    if (!pinch.current.has(event.pointerId)) return;
+    pinch.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pinch.current.size !== 2) return;
+
+    const [a, b] = [...pinch.current.values()];
+    const start = pinchStart.current;
+    if (!a || !b || !start || start.distance === 0) return;
+    const distance = Math.hypot(a.x - b.x, a.y - b.y);
+    const next = (start.scale * distance) / start.distance;
+    setScale(Math.min(MAX_SCALE, Math.max(MIN_SCALE, next)));
+  }, []);
+
+  const onPointerUp = useCallback((event: ReactPointerEvent) => {
+    pinch.current.delete(event.pointerId);
+    if (pinch.current.size < 2) pinchStart.current = null;
+  }, []);
+
+  // Encadenar por insistencia y no por tocar el fondo: llegar al final no puede
+  // arrastrarte al capítulo siguiente sin que lo pidas.
+  const overscroll = useRef(0);
+  const handleWheel = useCallback(
+    (event: { deltaY: number }) => {
+      const container = scrollRef.current;
+      if (!container || !onReachEnd) return;
+      const atEnd =
+        container.scrollTop + container.clientHeight >= container.scrollHeight - 4;
+      if (!atEnd || event.deltaY <= 0) {
+        overscroll.current = 0;
+        return;
+      }
+      overscroll.current += event.deltaY;
+      if (overscroll.current >= OVERSCROLL_TO_CHAIN) {
+        overscroll.current = 0;
+        onReachEnd();
+      }
+    },
+    [onReachEnd],
+  );
+
   return (
     <div
       ref={scrollRef}
       onScroll={handleScroll}
+      onWheel={handleWheel}
       onClick={onToggleChrome}
-      className="no-scrollbar h-screen w-full overflow-y-auto overscroll-contain"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      // `touch-pan-x touch-pan-y` deja el scroll nativo en los dos ejes y a la vez
+      // apaga el zoom del navegador, que se pelearía con el pinch propio.
+      className="no-scrollbar h-screen w-full touch-pan-x touch-pan-y overflow-auto overscroll-contain"
     >
-      <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
+      <div
+        className="mx-auto flex flex-col items-center"
+        style={{ width: `${scale * 100}%`, maxWidth: scale > 1 ? 'none' : '48rem' }}
+      >
         {pages.map((url, pageIndex) => (
           <div
             key={url}

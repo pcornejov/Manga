@@ -20,6 +20,7 @@ import StateMessage from '../components/StateMessage';
 import { getLibrary, getRecentProgress } from '../db';
 import type { LibraryEntry, ProgressEntry } from '../db/schema';
 import { useDebounce } from '../hooks/useDebounce';
+import { useLibraryUpdates } from '../hooks/useLibraryUpdates';
 import { useMangaStats } from '../hooks/useMangaStats';
 
 type Status = 'idle' | 'loading' | 'done' | 'error';
@@ -96,6 +97,7 @@ export default function HomePage() {
 
   const visible = results.filter((manga) => !hidden.has(manga.id));
   const searchStats = useMangaStats(visible.map((manga) => manga.id));
+  const libraryUpdates = useLibraryUpdates(library);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
@@ -160,11 +162,18 @@ export default function HomePage() {
               <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
                 {library.map((entry) => (
                   <Link key={entry.mangaId} to={`/manga/${entry.mangaId}`} className="flex flex-col gap-2">
-                    <CoverImage
-                      src={entry.coverUrl}
-                      alt={`Portada de ${entry.title}`}
-                      className="aspect-[2/3] w-full rounded-lg"
-                    />
+                    <span className="relative block">
+                      <CoverImage
+                        src={entry.coverUrl}
+                        alt={`Portada de ${entry.title}`}
+                        className="aspect-[2/3] w-full rounded-lg"
+                      />
+                      {libraryUpdates.has(entry.mangaId) ? (
+                        <span className="absolute right-1 top-1 rounded-full bg-accent px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-ink-900">
+                          +{libraryUpdates.get(entry.mangaId)}
+                        </span>
+                      ) : null}
+                    </span>
                     <span className="line-clamp-2 text-xs leading-snug text-ink-200">
                       {entry.title}
                     </span>

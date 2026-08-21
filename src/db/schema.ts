@@ -11,6 +11,13 @@ export interface LibraryEntry {
   title: string;
   coverUrl: string | null;
   addedAt: number;
+  /**
+   * Estado de la obra la última vez que se abrió su ficha. Comparar contra el
+   * actual es lo que permite avisar de capítulos nuevos sin traerse el feed.
+   * Opcionales: las entradas guardadas antes de existir estos campos no los traen.
+   */
+  latestChapterId?: string | null;
+  chapterCount?: number;
 }
 
 /**

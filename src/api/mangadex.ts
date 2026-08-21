@@ -230,6 +230,27 @@ export async function getGenres(signal?: AbortSignal): Promise<Tag[]> {
   return genresCache;
 }
 
+/**
+ * Cuántos capítulos leíbles tiene la obra, en los idiomas configurados.
+ * Es el `total` de un feed de una sola fila, así que sale barato.
+ */
+export async function countReadableChapters(
+  mangaId: string,
+  signal?: AbortSignal,
+): Promise<number> {
+  const body = await apiGet<CollectionResponse<Chapter>>(
+    `/manga/${mangaId}/feed`,
+    {
+      translatedLanguage: [...TRANSLATED_LANGUAGES],
+      contentRating: CONTENT_RATING,
+      includeExternalUrl: 0,
+      limit: 1,
+    },
+    signal,
+  );
+  return body.total;
+}
+
 /** Estadísticas ya pedidas. No cambian de un minuto a otro, así que basta la sesión. */
 const statsCache = new Map<string, MangaStatistics>();
 /** Tope de ids por pedido, para no armar una URL desmedida. */

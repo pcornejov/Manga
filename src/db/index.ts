@@ -85,9 +85,13 @@ export async function getLibrary(): Promise<LibraryEntry[]> {
   return entries.reverse();
 }
 
-export async function isFollowed(mangaId: string): Promise<boolean> {
+export async function getLibraryEntry(mangaId: string): Promise<LibraryEntry | undefined> {
   const db = await getDb();
-  return (await db.get('library', mangaId)) !== undefined;
+  return db.get('library', mangaId);
+}
+
+export async function isFollowed(mangaId: string): Promise<boolean> {
+  return (await getLibraryEntry(mangaId)) !== undefined;
 }
 
 export async function followManga(entry: LibraryEntry): Promise<void> {

@@ -84,7 +84,9 @@ export default defineConfig({
     react(),
     mangadexProxy(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' y no 'autoUpdate': con la app instalada en el teléfono, una
+      // recarga automática puede pisarte a mitad de un capítulo. Mejor avisar.
+      registerType: 'prompt',
       // El SW también corre en `npm run dev`, si no el modo offline sólo se
       // podría probar sobre el build.
       devOptions: { enabled: true, type: 'module' },

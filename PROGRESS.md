@@ -108,6 +108,8 @@ npm install
 npm run dev        # http://localhost:5173
 npm run build      # tsc -b && vite build
 npm run typecheck  # sólo TypeScript
+npm test           # tests unitarios (runner de Node, sin dependencias extra)
+npm run check      # typecheck + tests + build
 npm run smoke:api  # smoke test de la capa de datos contra la API real
 npm run preview    # sirve dist/ (necesario para probar el Service Worker del build)
 ```

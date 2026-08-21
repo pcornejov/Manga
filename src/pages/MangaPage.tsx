@@ -21,9 +21,9 @@ import Spinner from '../components/Spinner';
 import StateMessage from '../components/StateMessage';
 import {
   followManga,
+  getLibraryEntry,
   getMangaDownloads,
   getMangaProgress,
-  isFollowed,
   unfollowManga,
 } from '../db';
 import type { DownloadEntry, ProgressEntry } from '../db/schema';
@@ -84,7 +84,19 @@ export default function MangaPage() {
         if (!controller.signal.aborted) setOfficialUrl(official);
       }
 
-      setFollowed(await isFollowed(id));
+      const entry = await getLibraryEntry(id);
+      setFollowed(entry !== undefined);
+
+      // Visitar la ficha marca la obra como vista: se guarda su estado actual
+      // para que el aviso de capítulos nuevos se limpie y vuelva a contar desde
+      // acá. Se conserva `addedAt`, si no la obra saltaría al principio de la lista.
+      if (entry) {
+        await followManga({
+          ...entry,
+          latestChapterId: detail.attributes.latestUploadedChapter,
+          chapterCount: feed.length,
+        });
+      }
 
       const progress = await getMangaProgress(id);
       setProgressByChapter(new Map(progress.map((entry) => [entry.chapterId, entry])));

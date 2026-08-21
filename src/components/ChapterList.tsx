@@ -6,6 +6,9 @@ import { type DownloadProgress, downloadChapter, removeDownload } from '../api/d
 import type { DownloadEntry, ProgressEntry } from '../db/schema';
 import { useVirtualList } from '../hooks/useVirtualList';
 
+/** Cuántos capítulos baja el botón de descarga múltiple. */
+const BATCH_SIZE = 5;
+
 /** A partir de acá la lista se virtualiza. */
 const VIRTUALIZE_THRESHOLD = 200;
 const HEADER_HEIGHT = 44;
@@ -191,8 +194,17 @@ export default function ChapterList({
   onDownloadsChange,
 }: ChapterListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const rows = useMemo(() => buildRows(chapters), [chapters]);
   const [downloadStates, setDownloadStates] = useState<Record<string, DownloadState>>({});
+  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+  const [batchRunning, setBatchRunning] = useState(false);
+
+  // La lista llega ascendente; invertirla es lo que permite ir a lo último sin
+  // recorrer 400 filas.
+  const ordered = useMemo(
+    () => (order === 'asc' ? chapters : [...chapters].reverse()),
+    [chapters, order],
+  );
+  const rows = useMemo(() => buildRows(ordered), [ordered]);
 
   const setState = useCallback((chapterId: string, state: DownloadState | null) => {
     setDownloadStates((current) => {
@@ -253,6 +265,71 @@ export default function ChapterList({
     itemHeight,
   });
 
+  /** Baja de a uno los próximos capítulos que falten, en el orden que se ve. */
+  const downloadBatch = useCallback(async () => {
+    const pendientes = ordered
+      .filter((chapter) => isReadable(chapter) && !downloadedChapters.has(chapter.id))
+      .slice(0, BATCH_SIZE);
+    if (pendientes.length === 0) return;
+
+    setBatchRunning(true);
+    for (const chapter of pendientes) {
+      setState(chapter.id, { kind: 'downloading', done: 0, total: chapter.attributes.pages });
+      try {
+        await downloadChapter(
+          chapter.id,
+          mangaId,
+          mangaTitle,
+          chapterLabel(chapter),
+          (progress: DownloadProgress) => {
+            setState(chapter.id, { kind: 'downloading', ...progress });
+          },
+        );
+        setState(chapter.id, null);
+        onDownloadsChange();
+      } catch (cause) {
+        setState(chapter.id, {
+          kind: 'error',
+          message: cause instanceof Error ? cause.message : 'Falló la descarga.',
+        });
+        break;
+      }
+    }
+    setBatchRunning(false);
+  }, [ordered, downloadedChapters, mangaId, mangaTitle, setState, onDownloadsChange]);
+
+  const pendientesCount = ordered.filter(
+    (chapter) => isReadable(chapter) && !downloadedChapters.has(chapter.id),
+  ).length;
+
+  const toolbar = (
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => {
+          setOrder((current) => (current === 'asc' ? 'desc' : 'asc'));
+        }}
+        className="rounded bg-ink-700 px-3 py-1.5 text-xs text-ink-200 transition-colors hover:bg-ink-600"
+      >
+        {order === 'asc' ? 'Del primero al último ↓' : 'Del último al primero ↑'}
+      </button>
+      {pendientesCount > 0 ? (
+        <button
+          type="button"
+          disabled={batchRunning}
+          onClick={() => {
+            void downloadBatch();
+          }}
+          className="rounded bg-ink-700 px-3 py-1.5 text-xs text-ink-200 transition-colors hover:bg-ink-600 disabled:opacity-50"
+        >
+          {batchRunning
+            ? 'Descargando…'
+            : `Descargar ${Math.min(BATCH_SIZE, pendientesCount)} siguientes`}
+        </button>
+      ) : null}
+    </div>
+  );
+
   const renderRow = (row: Row) =>
     row.kind === 'header' ? (
       <div
@@ -280,23 +357,29 @@ export default function ChapterList({
 
   if (!virtualized) {
     return (
-      <div className="overflow-hidden rounded-lg border border-ink-700">
-        {rows.map(renderRow)}
-      </div>
+      <>
+        {toolbar}
+        <div className="overflow-hidden rounded-lg border border-ink-700">
+          {rows.map(renderRow)}
+        </div>
+      </>
     );
   }
 
   return (
-    <div
-      ref={scrollRef}
-      className="h-[70vh] overflow-y-auto rounded-lg border border-ink-700"
-      // Contenedor propio de scroll: sin esto la ventana virtual no tiene con qué medirse.
-    >
-      <div style={{ height: totalHeight, position: 'relative' }}>
-        <div style={{ transform: `translateY(${offsetTop}px)` }}>
-          {rows.slice(startIndex, endIndex).map(renderRow)}
+    <>
+      {toolbar}
+      <div
+        ref={scrollRef}
+        className="h-[70vh] overflow-y-auto rounded-lg border border-ink-700"
+        // Contenedor propio de scroll: sin esto la ventana virtual no tiene con qué medirse.
+      >
+        <div style={{ height: totalHeight, position: 'relative' }}>
+          <div style={{ transform: `translateY(${offsetTop}px)` }}>
+            {rows.slice(startIndex, endIndex).map(renderRow)}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

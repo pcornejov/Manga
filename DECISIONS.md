@@ -185,3 +185,24 @@ proxear es obligatorio, para el JSON y también para las imágenes.
   votos, que si no aparecerían arriba de todo con un 10 puesto por tres personas.
 - **Las notas se pintan encima de la grilla ya renderizada**: llegan después que las obras,
   así que esperar por ellas retrasaría la pantalla sin necesidad.
+
+## Mejoras posteriores
+
+- **El Service Worker pasa a `prompt` en vez de `autoUpdate`**: con la app instalada en el
+  teléfono, recargar sola puede cortarte a mitad de un capítulo. Ahora avisa y vos decidís.
+- **El aviso de capítulos nuevos se apoya en `latestUploadedChapter`**: es un atributo de la
+  obra, así que toda la biblioteca se comprueba en un solo pedido; sólo para las que
+  cambiaron se cuenta cuántos hay, que es un pedido más por obra.
+- **Visitar la ficha conserva `addedAt`**: se guarda la foto del estado actual para limpiar
+  el aviso, pero pisar esa fecha haría saltar la obra al principio de "Siguiendo".
+- **El capítulo siguiente se precarga a tres páginas del final**, y sólo sus dos primeras
+  páginas: pasa por el mismo semáforo de tres, así que nunca compite con lo que estás mirando.
+- **El encadenado automático exige insistir con el scroll**, no basta con tocar el fondo:
+  llegar al final de un capítulo no puede arrastrarte al siguiente sin que lo pidas.
+- **El zoom del modo continuo cambia el ancho de la columna en vez de aplicar `transform`**:
+  así crecen `scrollWidth` y `scrollHeight` y el scroll nativo sigue sirviendo en los dos
+  ejes; con `transform` habría que reimplementarlo entero.
+- **Los tests usan el runner de Node y `tsx`, ya instalado**: cubrir deduplicación, elección
+  de idioma, filtrado de licenciadas y ritmo del limitador no justificaba sumar Vitest.
+  Lo que queda sin cubrir es el navegador (modos del lector, tope de imágenes en vuelo,
+  offline), que sí necesitaría Playwright como dependencia.
