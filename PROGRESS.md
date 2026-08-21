@@ -54,7 +54,9 @@
 - IndexedDB (`idb`) con `library`, `progress`, `settings` (y `downloads`, que usa la fase 6).
 - Progreso guardado con throttle de 1 s, volcado inmediato al ocultarse la pestaña y
   espejo en `localStorage` que se reconcilia al abrir la base.
-- "Continuar leyendo" y "Siguiendo" en la pantalla de inicio.
+- "Continuar leyendo" y "Siguiendo" en la pantalla de inicio, más descubrimiento:
+  **Novedades** (obras con capítulos recién subidos en los idiomas configurados),
+  **Populares** y navegación por **género**, todo filtrado a lo que la app puede abrir.
 - Botón de seguir / dejar de seguir en la ficha.
 - Gate: leer 7 páginas, cerrar la pestaña, reabrir y reanudar en la página exacta.
 

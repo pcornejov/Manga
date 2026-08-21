@@ -138,3 +138,20 @@ proxear es obligatorio, para el JSON y también para las imágenes.
 - **La ficha de una obra licenciada explica el motivo y enlaza al lector oficial**: quedaba
   más claro que una lista vacía, y el enlace sale de un único pedido extra que sólo se hace
   cuando no hay nada leíble.
+
+## Ajuste posterior — descubrimiento
+
+- **No se sumó otro proveedor**: MangaPlus, Webtoon, Comikey y Azuki son gratuitos y legales
+  pero ninguno publica una API, así que integrarlos implicaría ingeniería inversa contra sus
+  términos; los agregadores que sí tienen todo son sitios de piratería y exigirían scraping,
+  excluido desde el brief. Medido contra la API, MangaDex ya ofrece 247.682 capítulos
+  leíbles en español: el problema era de descubrimiento, no de catálogo.
+- **Novedades se arma desde `/chapter` y no desde `/manga`**: el listado de capítulos acepta
+  `includeExternalUrl=0` y filtro de idioma, así que lo que sale ya está garantizado leíble
+  y no hay que comprobar obra por obra. Las obras se completan con un único `/manga?ids[]=`.
+- **Populares y géneros sí se comprueban una por una**: ordenar por seguidores trae sobre
+  todo obras licenciadas (Solo Leveling entre las primeras), y no hay filtro de servidor que
+  las saque. Se piden 24 y se muestran 18, de modo que las descartadas no dejan huecos.
+- **Las secciones se pintan antes de terminar de verificar**: esperar a comprobar las 24
+  dejaría la pantalla vacía varios segundos; así aparece en 1,7 s y las pocas no leíbles se
+  caen solas.

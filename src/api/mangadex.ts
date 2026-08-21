@@ -7,6 +7,7 @@ import type {
   LocalizedString,
   Manga,
   Relationship,
+  Tag,
 } from './types';
 
 /** Idiomas de capítulo que la app pide, en orden de preferencia. */
@@ -132,6 +133,99 @@ export function chapterManga(
     (relationship): relationship is Extract<Relationship, { type: 'manga' }> =>
       relationship.type === 'manga',
   );
+}
+
+/** Obras por id, en un solo pedido. El orden de salida respeta el de `ids`. */
+export async function getMangaByIds(ids: string[], signal?: AbortSignal): Promise<Manga[]> {
+  if (ids.length === 0) return [];
+  const body = await apiGet<CollectionResponse<Manga>>(
+    '/manga',
+    { ids, limit: ids.length, includes: ['cover_art'], contentRating: CONTENT_RATING },
+    signal,
+  );
+  const byId = new Map(body.data.map((manga) => [manga.id, manga]));
+  return ids.map((id) => byId.get(id)).filter((manga): manga is Manga => manga !== undefined);
+}
+
+/**
+ * Obras con capítulos subidos hace poco.
+ *
+ * Se parte de los capítulos y no de las obras: el listado de capítulos ya se
+ * puede filtrar a lo leíble y a los idiomas configurados, así que lo que sale de
+ * acá no necesita comprobarse una por una.
+ */
+export async function getRecentlyUpdated(signal?: AbortSignal, limit = 24): Promise<Manga[]> {
+  const body = await apiGet<CollectionResponse<Chapter>>(
+    '/chapter',
+    {
+      includeExternalUrl: 0,
+      translatedLanguage: [...TRANSLATED_LANGUAGES],
+      contentRating: CONTENT_RATING,
+      'order[readableAt]': 'desc',
+      limit: 100,
+      includes: ['manga'],
+    },
+    signal,
+  );
+
+  const ids: string[] = [];
+  for (const chapter of body.data) {
+    const id = chapterManga(chapter)?.id;
+    if (id && !ids.includes(id)) ids.push(id);
+    if (ids.length >= limit) break;
+  }
+  return getMangaByIds(ids, signal);
+}
+
+/** Obras más seguidas. Hay que filtrarlas después: muchas son licenciadas. */
+export async function getPopular(signal?: AbortSignal, limit = 24): Promise<Manga[]> {
+  const body = await apiGet<CollectionResponse<Manga>>(
+    '/manga',
+    {
+      'order[followedCount]': 'desc',
+      hasAvailableChapters: true,
+      availableTranslatedLanguage: [...TRANSLATED_LANGUAGES],
+      contentRating: CONTENT_RATING,
+      includes: ['cover_art'],
+      limit,
+    },
+    signal,
+  );
+  return body.data;
+}
+
+/** Obras de un género, ordenadas por seguidores. También hay que filtrarlas. */
+export async function getByTag(
+  tagId: string,
+  signal?: AbortSignal,
+  limit = 24,
+): Promise<Manga[]> {
+  const body = await apiGet<CollectionResponse<Manga>>(
+    '/manga',
+    {
+      includedTags: [tagId],
+      'order[followedCount]': 'desc',
+      hasAvailableChapters: true,
+      availableTranslatedLanguage: [...TRANSLATED_LANGUAGES],
+      contentRating: CONTENT_RATING,
+      includes: ['cover_art'],
+      limit,
+    },
+    signal,
+  );
+  return body.data;
+}
+
+/** Lista de géneros. Es fija, así que se pide una sola vez por sesión. */
+let genresCache: Tag[] | null = null;
+
+export async function getGenres(signal?: AbortSignal): Promise<Tag[]> {
+  if (genresCache) return genresCache;
+  const body = await apiGet<CollectionResponse<Tag>>('/manga/tag', {}, signal);
+  genresCache = body.data
+    .filter((tag) => tag.attributes.group === 'genre')
+    .sort((a, b) => pickLocalized(a.attributes.name).localeCompare(pickLocalized(b.attributes.name)));
+  return genresCache;
 }
 
 /** Resultado por obra de si tiene algo leíble; se cachea por sesión. */

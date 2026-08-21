@@ -1,9 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MangaDexError } from '../api/client';
-import { hasReadableChapters, searchManga } from '../api/mangadex';
-import type { Manga } from '../api/types';
+import {
+  getByTag,
+  getGenres,
+  getPopular,
+  getRecentlyUpdated,
+  hasReadableChapters,
+  pickLocalized,
+  searchManga,
+} from '../api/mangadex';
+import type { Manga, Tag } from '../api/types';
 import CoverImage from '../components/CoverImage';
+import DiscoverySection from '../components/DiscoverySection';
 import MangaCard from '../components/MangaCard';
 import Spinner from '../components/Spinner';
 import StateMessage from '../components/StateMessage';
@@ -21,13 +30,24 @@ export default function HomePage() {
   const [status, setStatus] = useState<Status>('idle');
   const [recent, setRecent] = useState<ProgressEntry[]>([]);
   const [library, setLibrary] = useState<LibraryEntry[]>([]);
+  const [genres, setGenres] = useState<Tag[]>([]);
+  const [activeGenre, setActiveGenre] = useState<Tag | null>(null);
   const [error, setError] = useState('');
   const debouncedQuery = useDebounce(query.trim(), 400);
 
   useEffect(() => {
     void getRecentProgress().then(setRecent);
     void getLibrary().then(setLibrary);
+    void getGenres().then(setGenres).catch(() => undefined);
   }, []);
+
+  // Envueltos en `useCallback` para no relanzar la carga en cada render.
+  const loadRecent = useCallback((signal: AbortSignal) => getRecentlyUpdated(signal), []);
+  const loadPopular = useCallback((signal: AbortSignal) => getPopular(signal), []);
+  const loadGenre = useCallback(
+    (signal: AbortSignal) => getByTag(activeGenre?.id ?? '', signal),
+    [activeGenre],
+  );
 
   useEffect(() => {
     if (debouncedQuery.length < 2) {
@@ -150,12 +170,49 @@ export default function HomePage() {
             </section>
           ) : null}
 
-          {recent.length === 0 && library.length === 0 ? (
-            <StateMessage
-              title="Buscá una obra para empezar"
-              detail="Escribí al menos dos letras del título."
-            />
+          {genres.length > 0 ? (
+            <section className="mt-8">
+              <h2 className="mb-3 text-lg font-semibold text-ink-200">Géneros</h2>
+              <ul className="flex flex-wrap gap-2">
+                {genres.map((genre) => {
+                  const active = activeGenre?.id === genre.id;
+                  return (
+                    <li key={genre.id}>
+                      <button
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => {
+                          setActiveGenre(active ? null : genre);
+                        }}
+                        className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
+                          active
+                            ? 'bg-accent text-ink-900'
+                            : 'bg-ink-700 text-ink-200 hover:bg-ink-600'
+                        }`}
+                      >
+                        {pickLocalized(genre.attributes.name)}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
           ) : null}
+
+          {activeGenre ? (
+            <DiscoverySection
+              key={activeGenre.id}
+              title={pickLocalized(activeGenre.attributes.name)}
+              load={loadGenre}
+              verify
+              emptyDetail="Las obras más seguidas de este género están licenciadas."
+            />
+          ) : (
+            <>
+              <DiscoverySection title="Novedades" load={loadRecent} />
+              <DiscoverySection title="Populares" load={loadPopular} verify />
+            </>
+          )}
         </>
       ) : null}
 
