@@ -24,3 +24,15 @@
     scrollbar-width: none;
   }
 }
+
+@layer utilities {
+  /* Fundido de las portadas al resolverse, para que la grilla no parpadee. */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}

@@ -84,6 +84,53 @@ export async function getChapterFeed(
   return chapters;
 }
 
+/** Trae el capítulo con la obra embebida, para no pedir el manga por separado. */
+export async function getChapter(chapterId: string, signal?: AbortSignal): Promise<Chapter> {
+  const body = await apiGet<EntityResponse<Chapter>>(
+    `/chapter/${chapterId}`,
+    { includes: ['manga'] },
+    signal,
+  );
+  return body.data;
+}
+
+/** Obras ya traídas en esta sesión. El lector las usa sólo por la portada. */
+const mangaCache = new Map<string, Manga>();
+
+/** Igual que `getManga` pero sin repetir el pedido al encadenar capítulos. */
+export async function getCachedManga(id: string, signal?: AbortSignal): Promise<Manga> {
+  const cached = mangaCache.get(id);
+  if (cached) return cached;
+  const manga = await getManga(id, signal);
+  mangaCache.set(id, manga);
+  return manga;
+}
+
+/** Feeds ya traídos en esta sesión, para no repetir el paginado al encadenar capítulos. */
+const feedCache = new Map<string, Chapter[]>();
+
+/** Igual que `getChapterFeed` pero reusando lo que ya se pidió en esta sesión. */
+export async function getCachedChapterFeed(
+  mangaId: string,
+  signal?: AbortSignal,
+): Promise<Chapter[]> {
+  const cached = feedCache.get(mangaId);
+  if (cached) return cached;
+  const chapters = await getChapterFeed(mangaId, signal);
+  feedCache.set(mangaId, chapters);
+  return chapters;
+}
+
+/** Relación `manga` del capítulo, con atributos si se pidió `includes[]=manga`. */
+export function chapterManga(
+  chapter: Chapter,
+): Extract<Relationship, { type: 'manga' }> | undefined {
+  return chapter.relationships.find(
+    (relationship): relationship is Extract<Relationship, { type: 'manga' }> =>
+      relationship.type === 'manga',
+  );
+}
+
 /** URLs de todas las páginas de un capítulo, en la calidad pedida. */
 export async function getChapterPageUrls(
   chapterId: string,
