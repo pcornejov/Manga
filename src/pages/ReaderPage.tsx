@@ -400,6 +400,12 @@ export default function ReaderPage() {
         </div>
       ) : null}
 
+      {/* Con las barras ocultas, cambiar de página no produce ningún cambio que
+          un lector de pantalla pueda anunciar. */}
+      <p className="sr-only" aria-live="polite">
+        Página {index + 1} de {total}
+      </p>
+
       <ReaderChrome
         visible={chrome.visible}
         mangaId={mangaId}

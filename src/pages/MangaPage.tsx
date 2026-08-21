@@ -357,11 +357,17 @@ export default function MangaPage() {
           <ChapterList
             mangaId={manga.id}
             mangaTitle={title}
+            coverUrl={cover}
             chapters={shown}
             progressByChapter={progressByChapter}
             downloadedChapters={downloaded}
             onDownloadsChange={() => {
               void refreshDownloads(manga.id);
+            }}
+            onProgressChange={() => {
+              void getMangaProgress(manga.id).then((entries) => {
+                setProgressByChapter(new Map(entries.map((entry) => [entry.chapterId, entry])));
+              });
             }}
           />
         )}

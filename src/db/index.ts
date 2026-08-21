@@ -6,6 +6,7 @@ import {
   type LibraryEntry,
   type MangaReaderDB,
   type ProgressEntry,
+  type ReadableEntry,
   type SettingsEntry,
 } from './schema';
 
@@ -55,7 +56,16 @@ async function restorePending(db: IDBPDatabase<MangaReaderDB>): Promise<void> {
 
 function getDb(): Promise<IDBPDatabase<MangaReaderDB>> {
   dbPromise ??= openDB<MangaReaderDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
+    upgrade(db, oldVersion) {
+      // Cada versión agrega lo suyo: al abrir una base vieja hay que crear sólo
+      // lo que falta, no volver a crear lo que ya está.
+      if (oldVersion >= 1) {
+        if (!db.objectStoreNames.contains('readable')) {
+          db.createObjectStore('readable', { keyPath: 'mangaId' });
+        }
+        return;
+      }
+
       const library = db.createObjectStore('library', { keyPath: 'mangaId' });
       library.createIndex('by-addedAt', 'addedAt');
 
@@ -67,6 +77,8 @@ function getDb(): Promise<IDBPDatabase<MangaReaderDB>> {
 
       const downloads = db.createObjectStore('downloads', { keyPath: 'chapterId' });
       downloads.createIndex('by-manga', 'mangaId');
+
+      db.createObjectStore('readable', { keyPath: 'mangaId' });
     },
   }).then(async (db) => {
     openedDb = db;
@@ -147,6 +159,12 @@ export function saveProgressNow(entry: ProgressEntry): void {
     .catch(() => undefined);
 }
 
+/** Borra el progreso de un capítulo: es lo que deja "no leído" una fila. */
+export async function clearProgress(chapterId: string): Promise<void> {
+  const db = await getDb();
+  await db.delete('progress', chapterId);
+}
+
 /** Últimas lecturas, una por obra, de la más reciente a la más vieja. */
 export async function getRecentProgress(limit = 12): Promise<ProgressEntry[]> {
   const db = await getDb();
@@ -170,6 +188,31 @@ export async function getSettings(key: string): Promise<SettingsEntry | undefine
 export async function saveSettings(entry: SettingsEntry): Promise<void> {
   const db = await getDb();
   await db.put('settings', entry);
+}
+
+// --- Obras leíbles ---
+
+/**
+ * Vale una semana: una obra sin capítulos leíbles puede recibir una traducción,
+ * pero no de un día para el otro.
+ */
+const READABLE_TTL_MS = 7 * 24 * 60 * 60 * 1_000;
+
+/** Lo comprobado en visitas anteriores, para no repetir la verificación al arrancar. */
+export async function getReadableFlags(): Promise<Map<string, boolean>> {
+  const db = await getDb();
+  const entries = await db.getAll('readable');
+  const ahora = Date.now();
+  const vigentes = new Map<string, boolean>();
+  for (const entry of entries) {
+    if (ahora - entry.checkedAt < READABLE_TTL_MS) vigentes.set(entry.mangaId, entry.readable);
+  }
+  return vigentes;
+}
+
+export async function saveReadableFlag(entry: ReadableEntry): Promise<void> {
+  const db = await getDb();
+  await db.put('readable', entry);
 }
 
 // --- Descargas ---

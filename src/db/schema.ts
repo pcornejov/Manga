@@ -66,6 +66,13 @@ export interface DownloadEntry {
   downloadedAt: number;
 }
 
+/** Si una obra tiene capítulos que la app pueda abrir, con cuándo se comprobó. */
+export interface ReadableEntry {
+  mangaId: string;
+  readable: boolean;
+  checkedAt: number;
+}
+
 export interface MangaReaderDB extends DBSchema {
   library: {
     key: string;
@@ -86,7 +93,11 @@ export interface MangaReaderDB extends DBSchema {
     value: DownloadEntry;
     indexes: { 'by-manga': string };
   };
+  readable: {
+    key: string;
+    value: ReadableEntry;
+  };
 }
 
 export const DB_NAME = 'manga-reader';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;

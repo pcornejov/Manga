@@ -1,3 +1,4 @@
+import { getReadableFlags, saveReadableFlag } from '../db';
 import { UPLOADS_ORIGIN, apiGet, getAtHomeServer, imageUrl } from './client';
 import type {
   Chapter,
@@ -299,8 +300,25 @@ export async function getTopRated(signal?: AbortSignal, limit = 24): Promise<Man
   return body.data;
 }
 
-/** Resultado por obra de si tiene algo leíble; se cachea por sesión. */
+/**
+ * Resultado por obra de si tiene algo leíble.
+ *
+ * Se guarda también en IndexedDB: en memoria sola, cada arranque de la app volvía
+ * a verificar unas sesenta obras y esos pedidos competían con las portadas.
+ */
 const readableCache = new Map<string, boolean>();
+let readableLoaded: Promise<void> | null = null;
+
+function loadReadableCache(): Promise<void> {
+  readableLoaded ??= getReadableFlags()
+    .then((guardados) => {
+      for (const [id, readable] of guardados) {
+        if (!readableCache.has(id)) readableCache.set(id, readable);
+      }
+    })
+    .catch(() => undefined);
+  return readableLoaded;
+}
 
 /**
  * Si la obra tiene al menos un capítulo que la app pueda abrir.
@@ -312,6 +330,7 @@ export async function hasReadableChapters(
   mangaId: string,
   signal?: AbortSignal,
 ): Promise<boolean> {
+  await loadReadableCache();
   const cached = readableCache.get(mangaId);
   if (cached !== undefined) return cached;
 
@@ -327,6 +346,7 @@ export async function hasReadableChapters(
   );
   const readable = body.total > 0;
   readableCache.set(mangaId, readable);
+  void saveReadableFlag({ mangaId, readable, checkedAt: Date.now() }).catch(() => undefined);
   return readable;
 }
 

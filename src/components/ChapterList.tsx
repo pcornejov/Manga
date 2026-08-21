@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { chapterLabel, isReadable, volumeLabel } from '../api/mangadex';
 import type { Chapter } from '../api/types';
 import { type DownloadProgress, downloadChapter, removeDownload } from '../api/downloads';
+import { clearProgress, saveProgress } from '../db';
 import type { DownloadEntry, ProgressEntry } from '../db/schema';
 import { useVirtualList } from '../hooks/useVirtualList';
 import Icon from './Icon';
@@ -28,10 +29,12 @@ type DownloadState =
 interface ChapterListProps {
   mangaId: string;
   mangaTitle: string;
+  coverUrl: string | null;
   chapters: Chapter[];
   progressByChapter: Map<string, ProgressEntry>;
   downloadedChapters: Map<string, DownloadEntry>;
   onDownloadsChange: () => void;
+  onProgressChange: () => void;
 }
 
 /** Aplana los capítulos a filas: un encabezado por volumen y una fila por capítulo. */
@@ -135,6 +138,7 @@ function ChapterRow({
   downloadState,
   onDownload,
   onDelete,
+  onToggleRead,
 }: {
   chapter: Chapter;
   progress: ProgressEntry | undefined;
@@ -142,6 +146,7 @@ function ChapterRow({
   downloadState: DownloadState | undefined;
   onDownload: () => void;
   onDelete: () => void;
+  onToggleRead: () => void;
 }) {
   const readable = isReadable(chapter);
   const read = progress?.completed === true;
@@ -168,11 +173,22 @@ function ChapterRow({
           ) : null}
         </span>
       </span>
-      {read ? (
-        <span className="shrink-0 text-ink-400" title="Leído">
-          <Icon name="check" className="h-4 w-4" />
-        </span>
-      ) : null}
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onToggleRead();
+        }}
+        title={read ? 'Marcar como no leído' : 'Marcar como leído'}
+        aria-label={read ? 'Marcar como no leído' : 'Marcar como leído'}
+        aria-pressed={read}
+        className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors ${
+          read ? 'text-accent hover:bg-ink-700' : 'text-ink-600 hover:bg-ink-700 hover:text-ink-400'
+        }`}
+      >
+        <Icon name="check" className="h-4 w-4" />
+      </button>
       {readable ? (
         <DownloadButton
           downloaded={downloaded}
@@ -209,10 +225,12 @@ function ChapterRow({
 export default function ChapterList({
   mangaId,
   mangaTitle,
+  coverUrl,
   chapters,
   progressByChapter,
   downloadedChapters,
   onDownloadsChange,
+  onProgressChange,
 }: ChapterListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [downloadStates, setDownloadStates] = useState<Record<string, DownloadState>>({});
@@ -286,6 +304,48 @@ export default function ChapterList({
     itemHeight,
   });
 
+  /** Marca o desmarca un capítulo sin tener que abrirlo. */
+  const toggleRead = useCallback(
+    async (chapter: Chapter) => {
+      const actual = progressByChapter.get(chapter.id);
+      if (actual?.completed) await clearProgress(chapter.id);
+      else {
+        await saveProgress({
+          chapterId: chapter.id,
+          mangaId,
+          mangaTitle,
+          coverUrl,
+          page: Math.max(0, chapter.attributes.pages - 1),
+          totalPages: chapter.attributes.pages,
+          completed: true,
+          chapterLabel: chapterLabel(chapter),
+          updatedAt: Date.now(),
+        });
+      }
+      onProgressChange();
+    },
+    [progressByChapter, mangaId, mangaTitle, coverUrl, onProgressChange],
+  );
+
+  /** Marca de una vez todo lo que se ve, para cuando ya venías leyendo en otro lado. */
+  const markAllRead = useCallback(async () => {
+    for (const chapter of ordered) {
+      if (progressByChapter.get(chapter.id)?.completed) continue;
+      await saveProgress({
+        chapterId: chapter.id,
+        mangaId,
+        mangaTitle,
+        coverUrl,
+        page: Math.max(0, chapter.attributes.pages - 1),
+        totalPages: chapter.attributes.pages,
+        completed: true,
+        chapterLabel: chapterLabel(chapter),
+        updatedAt: Date.now(),
+      });
+    }
+    onProgressChange();
+  }, [ordered, progressByChapter, mangaId, mangaTitle, coverUrl, onProgressChange]);
+
   /** Baja de a uno los próximos capítulos que falten, en el orden que se ve. */
   const downloadBatch = useCallback(async () => {
     const pendientes = ordered
@@ -334,6 +394,17 @@ export default function ChapterList({
       >
         {order === 'asc' ? 'Del primero al último ↓' : 'Del último al primero ↑'}
       </button>
+      {ordered.some((chapter) => !progressByChapter.get(chapter.id)?.completed) ? (
+        <button
+          type="button"
+          onClick={() => {
+            void markAllRead();
+          }}
+          className="rounded bg-ink-700 px-3 py-1.5 text-xs text-ink-200 transition-colors hover:bg-ink-600"
+        >
+          Marcar todos como leídos
+        </button>
+      ) : null}
       {pendientesCount > 0 ? (
         <button
           type="button"
@@ -372,6 +443,9 @@ export default function ChapterList({
         }}
         onDelete={() => {
           startDelete(row.chapter.id);
+        }}
+        onToggleRead={() => {
+          void toggleRead(row.chapter);
         }}
       />
     );
