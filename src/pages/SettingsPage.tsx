@@ -52,9 +52,7 @@ export default function SettingsPage() {
       />
 
       <section className="mb-8">
-        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-ink-400">
-          Idiomas
-        </h2>
+        <h2 className="section-title mb-1">Idiomas</h2>
         <p className="mb-3 text-xs text-ink-400">
           En este orden: el primero que tenga capítulos es el que se abre. Sacar el inglés
           achica bastante el catálogo.
@@ -85,9 +83,7 @@ export default function SettingsPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-ink-400">
-          Contenido
-        </h2>
+        <h2 className="section-title mb-1">Contenido</h2>
         <p className="mb-3 text-xs text-ink-400">Qué clasificaciones aparecen en el catálogo.</p>
         <ul className="flex flex-col gap-2">
           {RATING_OPTIONS.map((option) => {
@@ -103,7 +99,7 @@ export default function SettingsPage() {
                       toggle(rating, option.code, RATING_OPTIONS.map((item) => item.code)),
                     );
                   }}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-ink-700 bg-ink-800/60 px-4 py-3 text-left transition-colors hover:bg-ink-700"
+                  className="surface flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-ink-700 active:scale-[0.99]"
                 >
                   <span className="flex flex-col">
                     <span className="text-sm text-ink-200">{option.label}</span>

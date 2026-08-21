@@ -276,3 +276,21 @@ proxear es obligatorio, para el JSON y también para las imágenes.
   era un botón que se puede tocar.
 - **`active:scale` en lo táctil**: sin `:hover` en el teléfono, no había ninguna respuesta
   visible al tocar.
+
+## Tercer pase visual
+
+- **Obra destacada arriba del inicio**: la pantalla era una sucesión de carruseles iguales,
+  sin nada donde apoyar la vista al entrar. Se elige la mejor puntuada que se pueda leer, y
+  va antes de los géneros porque es el ancla, no un contenido más.
+- **Tipografía del sistema y no una fuente web**: en una PWA que tiene que abrir sin
+  conexión, un webfont es un pedido más que puede fallar y un salto de texto mientras carga.
+- **Títulos de sección con una barrita de acento**: en una pantalla larga de secciones
+  apiladas, dan dónde engancharse al recorrer.
+- **Esqueletos con brillo en lugar de pulso**: el brillo que recorre comunica "está viniendo"
+  mejor que una opacidad que late.
+- **Barra de páginas del lector con estilo propio**: el control nativo se ve distinto en cada
+  navegador y su área táctil es minúscula para un pulgar.
+- **Entrada breve al cambiar de pantalla** (`page-enter`): da continuidad entre pestañas sin
+  hacerse esperar; se desactiva con `prefers-reduced-motion`.
+- **Clase `.surface` para las tarjetas**: el borde y el fondo ya habían empezado a divergir
+  entre biblioteca, ajustes y descargas.

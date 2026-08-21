@@ -43,9 +43,7 @@ export default function LibraryPage() {
 
       {recent.length > 0 ? (
         <section className="mb-8">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-400">
-            Continuar leyendo
-          </h2>
+          <h2 className="section-title">Continuar leyendo</h2>
           <ul className="flex flex-col gap-2">
             {recent.map((entry) => {
               const progreso = entry.totalPages
@@ -55,7 +53,7 @@ export default function LibraryPage() {
                 <li key={entry.chapterId}>
                   <Link
                     to={`/read/${entry.chapterId}`}
-                    className="flex items-center gap-3 rounded-xl border border-ink-700 bg-ink-800/60 p-2 transition-colors hover:bg-ink-700"
+                    className="surface flex items-center gap-3 p-2 transition-colors hover:bg-ink-700 active:scale-[0.99]"
                   >
                     <CoverImage
                       src={entry.coverUrl}
@@ -91,9 +89,7 @@ export default function LibraryPage() {
 
       {library.length > 0 ? (
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-400">
-            Siguiendo
-          </h2>
+          <h2 className="section-title">Siguiendo</h2>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
             {library.map((entry) => (
               <Link key={entry.mangaId} to={`/manga/${entry.mangaId}`} className="group flex flex-col gap-1.5">

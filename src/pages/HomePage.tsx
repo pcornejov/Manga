@@ -13,6 +13,7 @@ import {
 } from '../api/mangadex';
 import type { Manga, Tag } from '../api/types';
 import DiscoverySection from '../components/DiscoverySection';
+import FeaturedManga from '../components/FeaturedManga';
 import Icon from '../components/Icon';
 import MangaCard from '../components/MangaCard';
 import PageHeader from '../components/PageHeader';
@@ -222,6 +223,8 @@ export default function HomePage() {
         </>
       ) : (
         <>
+          {!activeGenre ? <FeaturedManga /> : null}
+
           {/* Fila que se desplaza: 25 géneros en bloque empujaban el contenido
               fuera de la pantalla antes de que se viera una sola portada. */}
           {genres.length > 0 ? (

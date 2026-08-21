@@ -352,9 +352,9 @@ export default function MangaPage() {
       </div>
 
       <section className="mt-7 px-4">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-400">
+        <h2 className="section-title">
           Capítulos
-          {shown.length > 0 ? <span className="ml-2 normal-case">({shown.length})</span> : null}
+          {shown.length > 0 ? <span className="ml-1 normal-case">({shown.length})</span> : null}
         </h2>
 
         {languages.length > 1 ? (

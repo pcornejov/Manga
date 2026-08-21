@@ -9,6 +9,17 @@
     height: 100%;
   }
 
+  /*
+   * Tipografía del sistema y no una fuente web: en una PWA que tiene que abrir
+   * sin conexión, un webfont es un pedido más que puede fallar y un salto de
+   * texto mientras carga.
+   */
+  html {
+    font-family:
+      ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     @apply bg-ink-900 text-ink-200 antialiased;
     overscroll-behavior-y: none;
@@ -16,6 +27,21 @@
 }
 
 @layer components {
+  /* Título de sección con una barrita de acento: ancla la vista al recorrer. */
+  .section-title {
+    @apply mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.08em]
+      text-ink-400;
+  }
+  .section-title::before {
+    content: '';
+    @apply h-3.5 w-0.5 rounded-full bg-accent;
+  }
+
+  /* Superficie elevada estándar. */
+  .surface {
+    @apply rounded-2xl border border-ink-700/80 bg-ink-800/60;
+  }
+
   /*
    * Píldoras: el lenguaje de toda la app. Activa usa fondo tenue en vez de
    * naranja sólido — con tres o cuatro seguidas, el acento pleno satura y deja
@@ -54,6 +80,43 @@
 }
 
 @layer utilities {
+  /* Brillo que recorre los esqueletos: comunica "cargando" mejor que un pulso. */
+  .shimmer {
+    background-image: linear-gradient(
+      100deg,
+      theme('colors.ink.800') 40%,
+      theme('colors.ink.700') 50%,
+      theme('colors.ink.800') 60%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
+
+  @keyframes shimmer {
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Entrada breve al cambiar de pantalla: da continuidad sin hacerse esperar. */
+  .page-enter {
+    animation: pageEnter 0.22s ease-out both;
+  }
+
+  @keyframes pageEnter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shimmer,
+    .page-enter {
+      animation: none;
+    }
+  }
+
   /* Respeta el notch y la barra de gestos del teléfono. */
   .pt-safe {
     padding-top: calc(0.75rem + env(safe-area-inset-top));
@@ -83,5 +146,23 @@
     to {
       opacity: 1;
     }
+  }
+}
+
+@layer components {
+  /*
+   * Barra de páginas del lector. El control nativo se ve distinto en cada
+   * navegador y su área táctil es minúscula para un pulgar.
+   */
+  .page-slider {
+    @apply h-1.5 w-full cursor-pointer appearance-none rounded-full bg-ink-600;
+  }
+  .page-slider::-webkit-slider-thumb {
+    @apply h-4 w-4 appearance-none rounded-full bg-accent;
+    box-shadow: 0 0 0 4px rgb(249 115 22 / 0.25);
+  }
+  .page-slider::-moz-range-thumb {
+    @apply h-4 w-4 rounded-full border-0 bg-accent;
+    box-shadow: 0 0 0 4px rgb(249 115 22 / 0.25);
   }
 }

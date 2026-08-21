@@ -111,7 +111,7 @@ export default function CoverImage({ src, alt, title, className = '' }: CoverIma
           className="h-full w-full animate-[fadeIn_.3s_ease-in] object-cover"
         />
       ) : (
-        <div className="h-full w-full animate-pulse bg-ink-700" />
+        <div className="shimmer h-full w-full" />
       )}
     </div>
   );

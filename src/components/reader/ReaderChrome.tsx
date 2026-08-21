@@ -115,7 +115,7 @@ export default function ReaderChrome({
             }}
             aria-label="Ir a la página"
             // En RTL la barra se invierte para que avanzar sea moverse hacia la izquierda.
-            className={`h-1 w-full accent-accent ${mode === 'rtl' ? 'rotate-180' : ''}`}
+            className={`page-slider ${mode === 'rtl' ? 'rotate-180' : ''}`}
           />
         </div>
 

@@ -24,8 +24,8 @@ function Skeleton() {
     <div className="flex gap-3">
       {Array.from({ length: 6 }, (_, i) => (
         <div key={i} className="w-[7.5rem] shrink-0">
-          <div className="aspect-[2/3] w-full animate-pulse rounded-xl bg-ink-800" />
-          <div className="mt-2 h-3 w-4/5 animate-pulse rounded bg-ink-800" />
+          <div className="shimmer aspect-[2/3] w-full rounded-xl" />
+          <div className="shimmer mt-2 h-3 w-4/5 rounded" />
         </div>
       ))}
     </div>
@@ -89,7 +89,7 @@ export default function DiscoverySection({
 
   return (
     <section className="mb-7">
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-400">{title}</h2>
+      <h2 className="section-title">{title}</h2>
       {loading ? (
         <Skeleton />
       ) : failed ? (
