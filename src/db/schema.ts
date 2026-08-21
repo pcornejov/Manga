@@ -46,13 +46,22 @@ export interface GlobalSettings {
   fitMode: FitMode;
 }
 
+/** Qué catálogo ve la app. Vive aparte de las preferencias del lector. */
+export interface CatalogFilters {
+  key: 'catalog';
+  /** Idiomas de capítulo, en orden de preferencia. */
+  languages: string[];
+  /** Clasificaciones de contenido admitidas. */
+  contentRating: string[];
+}
+
 export interface MangaSettings {
   key: string;
   readingMode: ReadingMode;
   fitMode: FitMode;
 }
 
-export type SettingsEntry = GlobalSettings | MangaSettings;
+export type SettingsEntry = GlobalSettings | MangaSettings | CatalogFilters;
 
 /** Un capítulo descargado para leer sin conexión. */
 export interface DownloadEntry {

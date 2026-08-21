@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { MangaDexError } from '../api/client';
 import {
   getByTag,
@@ -22,6 +23,20 @@ import { useMangaStats } from '../hooks/useMangaStats';
 
 type Status = 'idle' | 'loading' | 'done' | 'error';
 
+const STATUS_FILTERS = [
+  { value: 'ongoing', label: 'En publicación' },
+  { value: 'completed', label: 'Finalizado' },
+  { value: 'hiatus', label: 'En pausa' },
+  { value: 'cancelled', label: 'Cancelado' },
+] as const;
+
+const DEMOGRAPHIC_FILTERS = [
+  { value: 'shounen', label: 'Shounen' },
+  { value: 'shoujo', label: 'Shoujo' },
+  { value: 'seinen', label: 'Seinen' },
+  { value: 'josei', label: 'Josei' },
+] as const;
+
 export default function HomePage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Manga[]>([]);
@@ -30,6 +45,8 @@ export default function HomePage() {
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState('');
   const [genres, setGenres] = useState<Tag[]>([]);
+  const [status_, setStatusFilter] = useState('');
+  const [demographic, setDemographic] = useState('');
   const [activeGenre, setActiveGenre] = useState<Tag | null>(null);
   const debouncedQuery = useDebounce(query.trim(), 400);
 
@@ -61,7 +78,10 @@ export default function HomePage() {
     setStatus('loading');
     setError('');
 
-    searchManga(debouncedQuery, controller.signal)
+    searchManga(debouncedQuery, controller.signal, 20, {
+      status: status_ || undefined,
+      demographic: demographic || undefined,
+    })
       .then((found) => {
         setResults(found);
         setHidden(new Set());
@@ -88,7 +108,7 @@ export default function HomePage() {
     return () => {
       controller.abort();
     };
-  }, [debouncedQuery]);
+  }, [debouncedQuery, status_, demographic]);
 
   const visible = results.filter((manga) => !hidden.has(manga.id));
   const searchStats = useMangaStats(visible.map((manga) => manga.id));
@@ -96,7 +116,18 @@ export default function HomePage() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 pb-safe-nav">
-      <PageHeader title="Descubrir" />
+      <PageHeader
+        title="Descubrir"
+        action={
+          <Link
+            to="/ajustes"
+            aria-label="Ajustes"
+            className="grid h-9 w-9 place-items-center rounded-full text-ink-400 hover:bg-ink-700 hover:text-ink-200"
+          >
+            <Icon name="settings" className="h-5 w-5" />
+          </Link>
+        }
+      />
 
       <div className="relative mb-5">
         <Icon
@@ -116,6 +147,48 @@ export default function HomePage() {
 
       {buscando ? (
         <>
+          {/* Acotar la búsqueda: en un catálogo de 50.000 obras, "dragon" trae
+              de todo. */}
+          <div className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4">
+            {(
+              [
+                ['Estado', status_, setStatusFilter, STATUS_FILTERS],
+                ['Demografía', demographic, setDemographic, DEMOGRAPHIC_FILTERS],
+              ] as const
+            ).map(([label, value, set, options]) => (
+              <select
+                key={label}
+                value={value}
+                onChange={(event) => {
+                  set(event.target.value);
+                }}
+                aria-label={label}
+                className={`shrink-0 rounded-full border-0 px-3 py-1.5 text-xs outline-none ${
+                  value ? 'bg-accent font-medium text-ink-900' : 'bg-ink-700 text-ink-200'
+                }`}
+              >
+                <option value="">{label}</option>
+                {options.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ))}
+            {status_ || demographic ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter('');
+                  setDemographic('');
+                }}
+                className="shrink-0 rounded-full bg-ink-700 px-3 py-1.5 text-xs text-ink-400 hover:text-ink-200"
+              >
+                Limpiar
+              </button>
+            ) : null}
+          </div>
+
           {status === 'loading' ? <Spinner label="Buscando…" /> : null}
           {status === 'error' ? <StateMessage title="Falló la búsqueda" detail={error} /> : null}
 

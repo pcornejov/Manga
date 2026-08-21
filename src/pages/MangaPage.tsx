@@ -19,6 +19,7 @@ import ChapterList from '../components/ChapterList';
 import CoverImage from '../components/CoverImage';
 import Icon from '../components/Icon';
 import Spinner from '../components/Spinner';
+import PageHeader from '../components/PageHeader';
 import StateMessage from '../components/StateMessage';
 import {
   followManga,
@@ -45,6 +46,8 @@ export default function MangaPage() {
   const [downloaded, setDownloaded] = useState<Map<string, DownloadEntry>>(new Map());
   const [language, setLanguage] = useState<string | null>(null);
   const [officialUrl, setOfficialUrl] = useState<string | null>(null);
+  /** Lo que se puede mostrar sin red: lo que ya está en IndexedDB. */
+  const [sinRed, setSinRed] = useState<{ title: string; cover: string | null; descargas: DownloadEntry[] } | null>(null);
   const [expandida, setExpandida] = useState(false);
   const [todosLosTags, setTodosLosTags] = useState(false);
   const [followed, setFollowed] = useState(false);
@@ -107,14 +110,61 @@ export default function MangaPage() {
       setLoading(false);
     })().catch((cause: unknown) => {
       if (controller.signal.aborted) return;
-      setError(cause instanceof MangaDexError ? cause.message : 'No se pudo cargar la obra.');
-      setLoading(false);
+
+      // Sin red, la obra puede seguir siendo útil: si hay capítulos descargados
+      // se arma la ficha con lo guardado en vez de mostrar un error.
+      void Promise.all([getLibraryEntry(id), getMangaDownloads(id)]).then(([entry, descargas]) => {
+        if (controller.signal.aborted) return;
+        if (descargas.length > 0 || entry) {
+          setSinRed({
+            title: entry?.title ?? descargas[0]?.mangaTitle ?? 'Obra guardada',
+            cover: entry?.coverUrl ?? null,
+            descargas,
+          });
+        } else {
+          setError(cause instanceof MangaDexError ? cause.message : 'No se pudo cargar la obra.');
+        }
+        setLoading(false);
+      });
     });
 
     return () => {
       controller.abort();
     };
   }, [id, refreshDownloads]);
+
+  if (sinRed) {
+    return (
+      <main className="mx-auto max-w-5xl px-4 pb-safe-nav">
+        <PageHeader title={sinRed.title} />
+        <p className="mb-4 rounded-xl border border-ink-700 bg-ink-800/60 px-4 py-3 text-sm text-ink-400">
+          Sin conexión. Se muestran sólo los capítulos que ya descargaste.
+        </p>
+        {sinRed.descargas.length === 0 ? (
+          <StateMessage
+            title="No hay capítulos descargados de esta obra"
+            detail="Cuando vuelvas a tener conexión vas a poder ver la lista completa."
+          />
+        ) : (
+          <ul className="overflow-hidden rounded-xl border border-ink-700">
+            {sinRed.descargas.map((entrada) => (
+              <li key={entrada.chapterId} className="border-b border-ink-700/60 last:border-0">
+                <Link
+                  to={`/read/${entrada.chapterId}`}
+                  className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-ink-700"
+                >
+                  <span className="truncate text-sm text-ink-200">{entrada.chapterLabel}</span>
+                  <span className="shrink-0 text-[11px] text-ink-400">
+                    {entrada.urls.length} págs
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+    );
+  }
 
   if (error) {
     return (

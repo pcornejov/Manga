@@ -3,6 +3,7 @@ import HomePage from './pages/HomePage';
 import MangaPage from './pages/MangaPage';
 import ReaderPage from './pages/ReaderPage';
 import LibraryPage from './pages/LibraryPage';
+import SettingsPage from './pages/SettingsPage';
 import StoragePage from './pages/StoragePage';
 import BottomNav from './components/BottomNav';
 import UpdatePrompt from './components/UpdatePrompt';
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/read/:chapterId" element={<ReaderPage />} />
         <Route path="/biblioteca" element={<LibraryPage />} />
         <Route path="/almacenamiento" element={<StoragePage />} />
+        <Route path="/ajustes" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <BottomNav />

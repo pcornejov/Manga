@@ -1,4 +1,5 @@
 import { getReadableFlags, saveReadableFlag } from '../db';
+import { catalogFilters } from './filters';
 import { UPLOADS_ORIGIN, apiGet, getAtHomeServer, imageUrl } from './client';
 import type {
   Chapter,
@@ -13,20 +14,32 @@ import type {
   Tag,
 } from './types';
 
-/** Idiomas de capítulo que la app pide, en orden de preferencia. */
-export const TRANSLATED_LANGUAGES = ['es', 'es-la', 'en'] as const;
+/** Idiomas de capítulo que la app pide, según los ajustes. */
+export function translatedLanguages(): string[] {
+  return catalogFilters().languages;
+}
 
-/** Ratings incluidos: la app es de uso personal y no muestra contenido adulto. */
-const CONTENT_RATING = ['safe', 'suggestive'];
+/** Clasificaciones de contenido admitidas, según los ajustes. */
+function contentRating(): string[] {
+  return catalogFilters().contentRating;
+}
 
 const FEED_PAGE_SIZE = 500;
 /** Tope duro de la API: `offset + limit` no puede pasar de 10000. */
 const MAX_FEED_OFFSET = 10_000;
 
+/** Acotaciones opcionales de la búsqueda. */
+export interface SearchFilters {
+  status?: string | undefined;
+  demographic?: string | undefined;
+  tagId?: string | undefined;
+}
+
 export async function searchManga(
   title: string,
   signal?: AbortSignal,
   limit = 20,
+  filters: SearchFilters = {},
 ): Promise<Manga[]> {
   const body = await apiGet<CollectionResponse<Manga>>(
     '/manga',
@@ -34,7 +47,11 @@ export async function searchManga(
       title,
       limit,
       includes: ['cover_art'],
-      contentRating: CONTENT_RATING,
+      contentRating: contentRating(),
+      // Los arrays vacíos no se mandan: `undefined` los saca de la query.
+      status: filters.status ? [filters.status] : undefined,
+      publicationDemographic: filters.demographic ? [filters.demographic] : undefined,
+      includedTags: filters.tagId ? [filters.tagId] : undefined,
     },
     signal,
   );
@@ -67,8 +84,8 @@ export async function getChapterFeed(
     const body = await apiGet<CollectionResponse<Chapter>>(
       `/manga/${mangaId}/feed`,
       {
-        translatedLanguage: [...TRANSLATED_LANGUAGES],
-        contentRating: CONTENT_RATING,
+        translatedLanguage: translatedLanguages(),
+        contentRating: contentRating(),
         // Las obras licenciadas sólo enlazan al lector oficial: no se pueden
         // leer ni descargar acá, así que no entran en la lista.
         includeExternalUrl: 0,
@@ -143,7 +160,7 @@ export async function getMangaByIds(ids: string[], signal?: AbortSignal): Promis
   if (ids.length === 0) return [];
   const body = await apiGet<CollectionResponse<Manga>>(
     '/manga',
-    { ids, limit: ids.length, includes: ['cover_art'], contentRating: CONTENT_RATING },
+    { ids, limit: ids.length, includes: ['cover_art'], contentRating: contentRating() },
     signal,
   );
   const byId = new Map(body.data.map((manga) => [manga.id, manga]));
@@ -162,8 +179,8 @@ export async function getRecentlyUpdated(signal?: AbortSignal, limit = 24): Prom
     '/chapter',
     {
       includeExternalUrl: 0,
-      translatedLanguage: [...TRANSLATED_LANGUAGES],
-      contentRating: CONTENT_RATING,
+      translatedLanguage: translatedLanguages(),
+      contentRating: contentRating(),
       'order[readableAt]': 'desc',
       limit: 100,
       includes: ['manga'],
@@ -187,8 +204,8 @@ export async function getPopular(signal?: AbortSignal, limit = 24): Promise<Mang
     {
       'order[followedCount]': 'desc',
       hasAvailableChapters: true,
-      availableTranslatedLanguage: [...TRANSLATED_LANGUAGES],
-      contentRating: CONTENT_RATING,
+      availableTranslatedLanguage: translatedLanguages(),
+      contentRating: contentRating(),
       includes: ['cover_art'],
       limit,
     },
@@ -209,8 +226,8 @@ export async function getByTag(
       includedTags: [tagId],
       'order[followedCount]': 'desc',
       hasAvailableChapters: true,
-      availableTranslatedLanguage: [...TRANSLATED_LANGUAGES],
-      contentRating: CONTENT_RATING,
+      availableTranslatedLanguage: translatedLanguages(),
+      contentRating: contentRating(),
       includes: ['cover_art'],
       limit,
     },
@@ -242,8 +259,8 @@ export async function countReadableChapters(
   const body = await apiGet<CollectionResponse<Chapter>>(
     `/manga/${mangaId}/feed`,
     {
-      translatedLanguage: [...TRANSLATED_LANGUAGES],
-      contentRating: CONTENT_RATING,
+      translatedLanguage: translatedLanguages(),
+      contentRating: contentRating(),
       includeExternalUrl: 0,
       limit: 1,
     },
@@ -290,8 +307,8 @@ export async function getTopRated(signal?: AbortSignal, limit = 24): Promise<Man
     {
       'order[rating]': 'desc',
       hasAvailableChapters: true,
-      availableTranslatedLanguage: [...TRANSLATED_LANGUAGES],
-      contentRating: CONTENT_RATING,
+      availableTranslatedLanguage: translatedLanguages(),
+      contentRating: contentRating(),
       includes: ['cover_art'],
       limit,
     },
@@ -337,8 +354,8 @@ export async function hasReadableChapters(
   const body = await apiGet<CollectionResponse<Chapter>>(
     `/manga/${mangaId}/feed`,
     {
-      translatedLanguage: [...TRANSLATED_LANGUAGES],
-      contentRating: CONTENT_RATING,
+      translatedLanguage: translatedLanguages(),
+      contentRating: contentRating(),
       includeExternalUrl: 0,
       limit: 1,
     },
@@ -361,8 +378,8 @@ export async function officialReaderUrl(
   const body = await apiGet<CollectionResponse<Chapter>>(
     `/manga/${mangaId}/feed`,
     {
-      translatedLanguage: [...TRANSLATED_LANGUAGES],
-      contentRating: CONTENT_RATING,
+      translatedLanguage: translatedLanguages(),
+      contentRating: contentRating(),
       limit: 1,
       'order[chapter]': 'asc',
     },
@@ -450,8 +467,10 @@ export function volumeLabel(chapter: Chapter): string {
   return volume ? `Volumen ${volume}` : 'Sin volumen';
 }
 
-/** Idiomas en orden de preferencia: el español manda, el inglés es el último recurso. */
-const LANGUAGE_PREFERENCE = ['es', 'es-la', 'en'];
+/** El orden de los ajustes es el orden de preferencia. */
+function languagePreference(): string[] {
+  return catalogFilters().languages;
+}
 
 /** Capítulos agrupados por idioma, de más traducido a menos. */
 export function chaptersByLanguage(chapters: Chapter[]): Map<string, Chapter[]> {
@@ -464,8 +483,8 @@ export function chaptersByLanguage(chapters: Chapter[]): Map<string, Chapter[]> 
   }
   return new Map(
     [...groups.entries()].sort((a, b) => {
-      const byPreference =
-        LANGUAGE_PREFERENCE.indexOf(a[0]) - LANGUAGE_PREFERENCE.indexOf(b[0]);
+      const preferencia = languagePreference();
+      const byPreference = preferencia.indexOf(a[0]) - preferencia.indexOf(b[0]);
       // Entre dos variantes del español gana la que tenga más capítulos: leer de
       // corrido importa más que la variante concreta.
       if (a[0].startsWith('es') && b[0].startsWith('es')) return b[1].length - a[1].length;

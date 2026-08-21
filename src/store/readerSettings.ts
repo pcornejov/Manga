@@ -35,7 +35,11 @@ export const useReaderSettings = create<ReaderSettingsState>((set, get) => ({
 
   loadGlobal: async () => {
     const stored = await getSettings('global');
-    if (stored) set({ global: { readingMode: stored.readingMode, fitMode: stored.fitMode } });
+    // La store de ajustes guarda cosas distintas: hay que confirmar que sea una
+    // preferencia del lector antes de leerla.
+    if (stored && 'readingMode' in stored) {
+      set({ global: { readingMode: stored.readingMode, fitMode: stored.fitMode } });
+    }
   },
 
   loadForManga: async (mangaId) => {
@@ -43,12 +47,13 @@ export const useReaderSettings = create<ReaderSettingsState>((set, get) => ({
     const stored = await getSettings(mangaId);
     set((state) => ({
       loadedMangaIds: [...state.loadedMangaIds, mangaId],
-      byManga: stored
-        ? {
-            ...state.byManga,
-            [mangaId]: { readingMode: stored.readingMode, fitMode: stored.fitMode },
-          }
-        : state.byManga,
+      byManga:
+        stored && 'readingMode' in stored
+          ? {
+              ...state.byManga,
+              [mangaId]: { readingMode: stored.readingMode, fitMode: stored.fitMode },
+            }
+          : state.byManga,
     }));
   },
 

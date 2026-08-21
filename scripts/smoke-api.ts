@@ -10,7 +10,7 @@
 
 import { MangaDexError } from '../src/api/client';
 import {
-  TRANSLATED_LANGUAGES,
+  translatedLanguages,
   authorNames,
   chapterLabel,
   coverUrl,
@@ -69,7 +69,7 @@ async function main(): Promise<void> {
   }
 
   if (!manga) {
-    fail(`Ningún resultado tiene capítulos legibles en [${TRANSLATED_LANGUAGES.join(', ')}].`);
+    fail(`Ningún resultado tiene capítulos legibles en [${translatedLanguages().join(", ")}].`);
   }
 
   console.log(`\nObra elegida: ${mangaTitle(manga)}`);
