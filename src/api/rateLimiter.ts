@@ -18,10 +18,19 @@ export class RequestQueue {
   private pausedUntil = 0;
   private draining = false;
 
+  /**
+   * @param limit     arranques permitidos dentro de la ventana.
+   * @param windowMs  largo de la ventana.
+   * @param name      identificador, para poder distinguir colas al depurar.
+   * @param minGapMs  separación mínima entre arranques. En 0 la cola dispara
+   *   ráfagas, que es lo que tolera la API; el host de portadas en cambio acepta
+   *   5 req/s sólo si vienen parejas y responde 403 a la ráfaga.
+   */
   constructor(
     private readonly limit: number,
     private readonly windowMs: number,
     readonly name: string,
+    private readonly minGapMs = 0,
   ) {}
 
   /**
@@ -64,8 +73,12 @@ export class RequestQueue {
     const now = Date.now();
     this.starts = this.starts.filter((t) => now - t < this.windowMs);
     const pause = Math.max(0, this.pausedUntil - now);
-    if (this.starts.length < this.limit) return pause;
+
+    const last = this.starts[this.starts.length - 1];
+    const gap = last === undefined ? 0 : Math.max(0, last + this.minGapMs - now);
+
+    if (this.starts.length < this.limit) return Math.max(pause, gap);
     const oldest = this.starts[0] ?? now;
-    return Math.max(oldest + this.windowMs - now, pause);
+    return Math.max(oldest + this.windowMs - now, pause, gap);
   }
 }

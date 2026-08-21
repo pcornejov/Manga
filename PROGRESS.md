@@ -21,7 +21,8 @@
 
 **Fase 3 — Búsqueda y ficha**
 - Búsqueda con debounce de 400 ms, cancelación de la request anterior y grilla de portadas.
-- `CoverImage`: carga diferida real con `IntersectionObserver` + cola de 5 req/s y reintentos.
+- `CoverImage`: carga diferida real con `IntersectionObserver` + cola espaciada a 200 ms
+  y reintentos con espera creciente.
 - Ficha: portada, título, sinopsis, autor, tags, estado, año.
 - `ChapterList`: agrupada por volumen, virtualizada arriba de 200 filas
   (`src/hooks/useVirtualList.ts`), con los capítulos leídos y en curso marcados.
@@ -63,10 +64,11 @@
 - Gate: descargar un capítulo, cortar la red, recargar y leerlo completo (11/11 páginas
   pintadas de verdad); la home también abre sin conexión.
 
-### Pendiente / conocido
-- `uploads.mangadex.org` limita las portadas a ~5 req/s por IP y responde 403 al pasarse.
-  La app pide las portadas de a poco (`IntersectionObserver` + cola de 5 req/s) y reintenta
-  con espera creciente; bajo un límite ya saturado igual pueden quedar huecos.
+### Notas
+- `uploads.mangadex.org` limita las portadas a 5 req/s por IP **y no tolera ráfagas**: la
+  app las pide de a una cada 200 ms (`IntersectionObserver` + cola con separación mínima)
+  y reintenta con espera creciente. Verificado: una grilla de 20 portadas carga completa,
+  sin un solo 403.
 
 ## Cómo correr
 

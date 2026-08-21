@@ -24,7 +24,7 @@ Cada decisión técnica no obvia, con el porqué en una línea.
 ## Fase 3 — Búsqueda y ficha
 
 - **Portadas con `IntersectionObserver` en vez de `loading="lazy"`**: hay que decidir *cuándo* se pide cada imagen para poder encolarla, y el atributo nativo no da ese control.
-- **Cola propia de 5 req/s para las portadas**: medido contra el servidor, `uploads.mangadex.org` responde 403 cuando una grilla le pide 20 imágenes de golpe, y el mismo pedido funciona segundos después; el techo tolerado es el mismo 5 req/s de la API. Va en una cola aparte de la del lector porque ahí el límite es de concurrencia y no de ritmo.
+- **Cola propia para las portadas, con separación mínima de 200 ms**: medido contra el servidor, `uploads.mangadex.org` tolera 5 req/s pero sólo si llegan parejos — una ráfaga de 5 y después un segundo de pausa (mismo promedio) devuelve 403 en más de la mitad de los casos, mientras que una cada 200 ms no falla ninguna. Por eso `RequestQueue` acepta un `minGapMs`: la API se banca las ráfagas y el host de imágenes no. Va en una cola aparte de la del lector porque ahí el límite es de concurrencia y no de ritmo.
 - **Reintento con espera creciente en las portadas**: el 403 es transitorio, así que rendirse al primer fallo deja huecos en una grilla que en realidad sí carga.
 - **Virtualización propia (`useVirtualList`) y no una dependencia**: hace falta una sola lista con dos alturas fijas conocidas de antemano, que se resuelve con offsets acumulados y búsqueda binaria.
 - **La lista se aplana a filas antes de virtualizar**: mezclar encabezados de volumen y capítulos en un solo array permite una única ventana virtual en lugar de una por grupo.

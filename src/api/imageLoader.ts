@@ -12,11 +12,13 @@ import { RequestQueue } from './rateLimiter';
 const MAX_IN_FLIGHT = 3;
 
 /**
- * `uploads.mangadex.org` aplica el mismo techo de 5 req/s que la API y responde
- * 403 al pasarlo. Las portadas van por su propia cola para no comerse los lugares
+ * `uploads.mangadex.org` acepta 5 req/s pero sólo si llegan parejas: medido
+ * contra el servidor, una ráfaga de 5 seguida de una pausa de un segundo devuelve
+ * 403 más de la mitad de las veces, mientras que una cada 200 ms no falla nunca.
+ * De ahí la separación mínima. Va en su propia cola para no comerse los lugares
  * del lector, que se rige por concurrencia y no por ritmo.
  */
-const coverQueue = new RequestQueue(5, 1_000, 'covers');
+const coverQueue = new RequestQueue(5, 1_000, 'covers', 200);
 
 let inFlight = 0;
 const waiting: Array<() => void> = [];
