@@ -294,3 +294,22 @@ proxear es obligatorio, para el JSON y también para las imágenes.
   hacerse esperar; se desactiva con `prefers-reduced-motion`.
 - **Clase `.surface` para las tarjetas**: el borde y el fondo ya habían empezado a divergir
   entre biblioteca, ajustes y descargas.
+
+## Quitar de la biblioteca y continuar donde ibas
+
+- **Quitar en dos toques y no `confirm()`**: la lista se recorre con el pulgar y un toque de
+  más borraría la lectura de una obra; el cartel nativo del navegador, en cambio, se ve ajeno
+  dentro de la PWA. El primer toque arma el botón, el segundo quita, y a los 4 s se desarma
+  solo.
+- **Quitar de "Continuar leyendo" borra todo el progreso de la obra**: esa lista se arma con
+  la última lectura de cada obra, así que borrar una sola fila haría aparecer la anterior y
+  la obra seguiría ahí. Dejar de seguir, en cambio, sólo saca la obra de la grilla.
+- **La ficha ofrece "Continuar cap. N" arriba de todo**: entrar a una obra que venís leyendo
+  es, casi siempre, ir al capítulo que sigue. Se elige el que quedó a medias y, si no hay
+  ninguno, el primero sin terminar.
+- **El botón de seguir pasa a ser secundario**: con dos píldoras naranjas competiendo, ya no
+  quedaba claro qué se venía a hacer a esta pantalla.
+- **La lista salta al capítulo que toca sólo si ya venías leyendo**: en una obra nueva, saltar
+  a la primera fila se llevaría por delante la portada y la sinopsis. El destacado va con
+  `ring-inset` porque un borde exterior correría la fila y rompería las alturas fijas de las
+  que depende la lista virtualizada.

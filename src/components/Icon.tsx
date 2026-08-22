@@ -6,7 +6,7 @@ interface IconProps {
 /**
  * Iconos como paths sueltos.
  *
- * Son ocho: una librería de iconos pesaría más que todo esto y traería una
+ * Son once: una librería de iconos pesaría más que todo esto y traería una
  * dependencia sólo para dibujar flechas.
  */
 const PATHS = {
@@ -19,6 +19,7 @@ const PATHS = {
   star: 'M12 3.5l2.6 5.6 6 .8-4.4 4.2 1.1 6.1-5.3-3-5.3 3 1.1-6.1L3.4 9.9l6-.8z',
   chevron: 'M9 6l6 6-6 6',
   book: 'M4 5.5A2.5 2.5 0 0 1 6.5 3H19v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 5.5v15',
+  close: 'M6 6l12 12M18 6L6 18',
   settings: 'M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7.7 19.5l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1A1.7 1.7 0 0 0 4.5 13H4a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 5.7 6.6l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3H11a1.7 1.7 0 0 0 1-1.5V2a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H22a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
 } as const;
 

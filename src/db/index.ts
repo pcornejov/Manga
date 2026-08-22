@@ -165,6 +165,20 @@ export async function clearProgress(chapterId: string): Promise<void> {
   await db.delete('progress', chapterId);
 }
 
+/**
+ * Borra todo el progreso de una obra.
+ *
+ * Es lo que la saca de "Continuar leyendo": esa lista se arma con la última
+ * lectura de cada obra, así que quitar una sola fila haría aparecer la anterior.
+ */
+export async function clearMangaProgress(mangaId: string): Promise<void> {
+  const db = await getDb();
+  const keys = await db.getAllKeysFromIndex('progress', 'by-manga', mangaId);
+  const tx = db.transaction('progress', 'readwrite');
+  for (const key of keys) void tx.store.delete(key);
+  await tx.done;
+}
+
 /** Últimas lecturas, una por obra, de la más reciente a la más vieja. */
 export async function getRecentProgress(limit = 12): Promise<ProgressEntry[]> {
   const db = await getDb();

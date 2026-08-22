@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { chapterLabel, isReadable, volumeLabel } from '../api/mangadex';
 import type { Chapter } from '../api/types';
@@ -33,6 +33,8 @@ interface ChapterListProps {
   chapters: Chapter[];
   progressByChapter: Map<string, ProgressEntry>;
   downloadedChapters: Map<string, DownloadEntry>;
+  /** Capítulo que toca leer: la lista se desplaza hasta él y lo destaca. */
+  focusChapterId?: string | undefined;
   onDownloadsChange: () => void;
   onProgressChange: () => void;
 }
@@ -136,6 +138,8 @@ function ChapterRow({
   progress,
   downloaded,
   downloadState,
+  focused,
+  rowRef,
   onDownload,
   onDelete,
   onToggleRead,
@@ -144,6 +148,8 @@ function ChapterRow({
   progress: ProgressEntry | undefined;
   downloaded: boolean;
   downloadState: DownloadState | undefined;
+  focused: boolean;
+  rowRef?: ((element: HTMLElement | null) => void) | undefined;
   onDownload: () => void;
   onDelete: () => void;
   onToggleRead: () => void;
@@ -200,9 +206,11 @@ function ChapterRow({
     </>
   );
 
+  // El destacado va por dentro: un borde exterior correría la fila y rompería
+  // las alturas fijas de las que depende la lista virtualizada.
   const className = `flex h-[64px] items-center gap-2 border-b border-ink-700/60 px-3 ${
     read ? 'opacity-60' : ''
-  }`;
+  } ${focused ? 'bg-accent/10 ring-1 ring-inset ring-accent/40' : ''}`;
 
   if (!readable) {
     return (
@@ -214,6 +222,7 @@ function ChapterRow({
 
   return (
     <Link
+      ref={rowRef}
       to={`/read/${chapter.id}`}
       className={`${className} transition-colors hover:bg-ink-700 focus-visible:bg-ink-700 focus-visible:outline-none`}
     >
@@ -229,10 +238,14 @@ export default function ChapterList({
   chapters,
   progressByChapter,
   downloadedChapters,
+  focusChapterId,
   onDownloadsChange,
   onProgressChange,
 }: ChapterListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const focusedRow = useRef<HTMLElement | null>(null);
+  /** A qué capítulo ya se saltó, para no volver a hacerlo en cada render. */
+  const jumped = useRef<string | null>(null);
   const [downloadStates, setDownloadStates] = useState<Record<string, DownloadState>>({});
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [batchRunning, setBatchRunning] = useState(false);
@@ -303,6 +316,28 @@ export default function ChapterList({
     itemCount: virtualized ? rows.length : 0,
     itemHeight,
   });
+
+  // Salto al capítulo que toca. En la lista virtualizada hay que calcular el
+  // desplazamiento a mano: la fila todavía no existe en el DOM.
+  useEffect(() => {
+    if (!focusChapterId || jumped.current === focusChapterId) return;
+    const index = rows.findIndex(
+      (row) => row.kind === 'chapter' && row.chapter.id === focusChapterId,
+    );
+    if (index < 0) return;
+    jumped.current = focusChapterId;
+
+    if (!virtualized) {
+      focusedRow.current?.scrollIntoView({ block: 'center' });
+      return;
+    }
+
+    const container = scrollRef.current;
+    if (!container) return;
+    let top = 0;
+    for (let i = 0; i < index; i += 1) top += rows[i]?.kind === 'header' ? HEADER_HEIGHT : ROW_HEIGHT;
+    container.scrollTop = Math.max(0, top - container.clientHeight / 2 + ROW_HEIGHT / 2);
+  }, [focusChapterId, rows, virtualized]);
 
   /** Marca o desmarca un capítulo sin tener que abrirlo. */
   const toggleRead = useCallback(
@@ -438,6 +473,14 @@ export default function ChapterList({
         progress={progressByChapter.get(row.chapter.id)}
         downloaded={downloadedChapters.has(row.chapter.id)}
         downloadState={downloadStates[row.chapter.id]}
+        focused={row.chapter.id === focusChapterId}
+        rowRef={
+          row.chapter.id === focusChapterId
+            ? (element) => {
+                focusedRow.current = element;
+              }
+            : undefined
+        }
         onDownload={() => {
           startDownload(row.chapter);
         }}

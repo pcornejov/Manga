@@ -170,3 +170,14 @@ despliegue automático en cada push.
 2. Abrir la ficha de una obra y tocar **Descargar** en un capítulo.
 3. En DevTools → Network, marcar **Offline**.
 4. Recargar y abrir el capítulo: se lee completo sin red.
+
+## Quitar de la biblioteca y continuar donde ibas
+
+- `Biblioteca`: botón de quitar en cada fila de "Continuar leyendo" (borra el progreso de la
+  obra) y en cada portada de "Siguiendo" (deja de seguirla). Dos toques para confirmar.
+- `Ficha de obra`: botón "Continuar cap. N · pág. X" arriba de la sinopsis, que lleva directo
+  al capítulo a medias o al primero sin terminar; la lista de capítulos se desplaza hasta esa
+  fila y la destaca.
+- 17 tests unitarios y 13 E2E en verde (dos nuevos: quitar de la biblioteca, y la ficha
+  proponiendo el capítulo que toca).
+

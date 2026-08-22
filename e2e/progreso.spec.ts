@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { stubApi } from './fixtures';
+import { IDS, stubApi } from './fixtures';
 
 test.beforeEach(async ({ page }) => {
   await stubApi(page);
@@ -54,3 +54,32 @@ test('los ajustes de idioma se guardan', async ({ page }) => {
     'true',
   );
 });
+
+test('se puede quitar una obra de la biblioteca', async ({ page }) => {
+  // Deja una lectura a medias y sigue la obra, para tener algo en las dos listas.
+  await page.goto('/read/cap-1');
+  await expect(page.getByAltText('Página 1')).toBeVisible();
+  await page.waitForTimeout(1500);
+  await page.goto(`/manga/${IDS.manga}`);
+  await page.getByRole('button', { name: 'Seguir' }).click();
+
+  await page.goto('/biblioteca');
+  const fila = page.locator('a[href="/read/cap-1"]').first();
+  await expect(fila).toBeVisible();
+
+  // Hace falta tocar dos veces: el primer toque arma el botón.
+  const quitar = fila.getByRole('button', { name: /Quitar/ });
+  await quitar.click();
+  await quitar.click();
+  await expect(page.locator('a[href="/read/cap-1"]')).toHaveCount(0);
+
+  const dejarDeSeguir = page.getByRole('button', { name: /Dejar de seguir/ });
+  await dejarDeSeguir.click();
+  await dejarDeSeguir.click();
+  await expect(page.locator(`a[href="/manga/${IDS.manga}"]`)).toHaveCount(0);
+
+  // Y no vuelven al recargar: el borrado quedó en IndexedDB.
+  await page.reload();
+  await expect(page.getByText('Todavía no hay nada acá')).toBeVisible();
+});
+

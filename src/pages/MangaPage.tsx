@@ -198,6 +198,34 @@ export default function MangaPage() {
     (a, b) => Number(a.attributes.chapter ?? 0) - Number(b.attributes.chapter ?? 0),
   );
 
+  // El capítulo que toca: el que quedó a medias o, si no hay ninguno, el primero
+  // sin terminar. Es a donde apunta el botón de arriba y lo que la lista destaca,
+  // para no tener que buscarlo a mano entre cuatrocientas filas.
+  const enCurso = shown
+    .filter((chapter) => {
+      const progreso = progressByChapter.get(chapter.id);
+      return progreso !== undefined && !progreso.completed;
+    })
+    .sort(
+      (a, b) =>
+        (progressByChapter.get(b.id)?.updatedAt ?? 0) - (progressByChapter.get(a.id)?.updatedAt ?? 0),
+    )[0];
+  const siguiente =
+    enCurso ?? shown.find((chapter) => !progressByChapter.get(chapter.id)?.completed);
+  const algoLeido = shown.some((chapter) => progressByChapter.get(chapter.id)?.completed);
+
+  const numeroSiguiente = siguiente?.attributes.chapter;
+  const etiquetaSiguiente = numeroSiguiente ? `Cap. ${numeroSiguiente}` : null;
+  const textoContinuar = etiquetaSiguiente
+    ? enCurso
+      ? `Continuar ${etiquetaSiguiente}`
+      : algoLeido
+        ? `Leer ${etiquetaSiguiente}`
+        : `Empezar por ${etiquetaSiguiente}`
+    : enCurso
+      ? 'Continuar leyendo'
+      : 'Empezar a leer';
+
   // Idiomas que sí tiene la obra, para explicar un listado vacío sin adivinar.
   const otherLanguages = manga.attributes.availableTranslatedLanguages.filter(
     (language): language is string => language !== null,
@@ -291,11 +319,9 @@ export default function MangaPage() {
                 });
               }}
               aria-pressed={followed}
-              className={`mt-1 inline-flex w-fit items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                followed
-                  ? 'bg-ink-700 text-ink-200 hover:bg-ink-600'
-                  : 'bg-accent text-ink-900 hover:brightness-110'
-              }`}
+              // Secundario: el naranja queda para "continuar", que es lo que se
+              // viene a hacer a esta pantalla.
+              className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-ink-700 px-4 py-2 text-sm font-medium text-ink-200 transition-colors hover:bg-ink-600"
             >
               {followed ? <Icon name="check" className="h-4 w-4" /> : null}
               {followed ? 'Siguiendo' : 'Seguir'}
@@ -303,6 +329,23 @@ export default function MangaPage() {
 
             </div>
           </header>
+
+          {/* Entrar a una obra que venís leyendo es, casi siempre, ir al capítulo
+              que sigue: así no hay que recorrer la lista para encontrarlo. */}
+          {siguiente ? (
+            <Link
+              to={`/read/${siguiente.id}`}
+              className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-ink-900 transition-[filter,transform] hover:brightness-110 active:scale-[0.99]"
+            >
+              <Icon name="book" className="h-4 w-4" />
+              {textoContinuar}
+              {enCurso ? (
+                <span className="font-normal tabular-nums opacity-75">
+                  · pág. {(progressByChapter.get(enCurso.id)?.page ?? 0) + 1}
+                </span>
+              ) : null}
+            </Link>
+          ) : null}
 
           {tags.length > 0 ? (
             <ul className="mt-4 flex flex-wrap gap-1.5">
@@ -412,6 +455,9 @@ export default function MangaPage() {
             chapters={shown}
             progressByChapter={progressByChapter}
             downloadedChapters={downloaded}
+            // Sólo si ya venías leyendo: en una obra nueva, saltar a la primera
+            // fila se llevaría por delante la portada y la sinopsis.
+            focusChapterId={enCurso !== undefined || algoLeido ? siguiente?.id : undefined}
             onDownloadsChange={() => {
               void refreshDownloads(manga.id);
             }}
