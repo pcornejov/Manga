@@ -313,3 +313,20 @@ proxear es obligatorio, para el JSON y también para las imágenes.
   a la primera fila se llevaría por delante la portada y la sinopsis. El destacado va con
   `ring-inset` porque un borde exterior correría la fila y rompería las alturas fijas de las
   que depende la lista virtualizada.
+
+## Logo
+
+- **Una página de manga y no un libro**: el ícono anterior era un libro abierto con
+  renglones, el mismo dibujo que usa cualquier lector de PDF. La retícula de viñetas con una
+  calle diagonal es lo que distingue a una página de historieta de cualquier otra página.
+- **El globo de diálogo es lo que lo vuelve manga**: probada sola, la retícula se leía como
+  una app de maquetación. El globo, en blanco sobre la viñeta naranja, la ubica de un vistazo.
+- **Inclinada 6°**: derecha se veía como una tabla; el ángulo le da el movimiento que tiene
+  una página de acción.
+- **Generado desde `scripts/build-icons.mjs`**: los PNG son artefactos. Tenerlos sin la
+  fuente obligaba a redibujar a mano en cada cambio de tamaño; ahora salen los seis de un
+  solo vector, con el Chromium que ya trae Playwright.
+- **Maskable con la marca al 55 % del lado**: Android recorta al círculo interior del 80 %,
+  y con la marca al tamaño del ícono normal se comía las viñetas de los bordes.
+- **Los íconos grandes fuera del precache**: los pide el sistema al instalar, con red, y no
+  la app. Precargarlos llevaba la caché de 297 KiB a 662 KiB sin dar nada offline.

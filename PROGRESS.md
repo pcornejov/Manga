@@ -181,3 +181,12 @@ despliegue automático en cada push.
 - 17 tests unitarios y 13 E2E en verde (dos nuevos: quitar de la biblioteca, y la ficha
   proponiendo el capítulo que toca).
 
+## Logo
+
+- Marca nueva: página de manga inclinada, con la viñeta activa en naranja y un globo de
+  diálogo. Reemplaza al libro abierto genérico.
+- `scripts/build-icons.mjs` (`npm run icons`) genera los seis archivos desde un solo vector:
+  `icon-64/192/512.png`, `icon-maskable-512.png`, `apple-touch-icon.png` y `favicon.svg`.
+- `index.html` ahora enlaza el favicon (SVG con respaldo PNG) y el ícono de iOS, que antes
+  faltaban: la pestaña mostraba el ícono genérico del navegador.
+

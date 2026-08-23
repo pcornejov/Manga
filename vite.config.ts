@@ -103,10 +103,13 @@ export default defineConfig({
         background_color: '#0b0b0f',
         theme_color: '#0b0b0f',
         icons: [
-          { src: '/icon-64.png', sizes: '64x64', type: 'image/png' },
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+          { src: '/icon-64.png', sizes: '64x64', type: 'image/png', purpose: 'any' },
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
           {
+            // Android recorta el ícono a la forma del sistema: éste va a sangre y
+            // con la marca dentro del círculo interior del 80 %.
             src: '/icon-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
@@ -116,6 +119,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
+        // Los íconos grandes los pide el sistema al instalar, con red, y no la
+        // app: precargarlos duplicaba el peso de la caché sin dar nada offline.
+        globIgnores: ['**/icon-512.png', '**/icon-maskable-512.png', '**/apple-touch-icon.png'],
         navigateFallback: '/index.html',
         // El proxy no es navegación: sin esto una llamada fallida devolvería el HTML.
         navigateFallbackDenylist: [/^\/api\//, /^\/img/],
