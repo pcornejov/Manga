@@ -53,6 +53,11 @@ export interface CatalogFilters {
   languages: string[];
   /** Clasificaciones de contenido admitidas. */
   contentRating: string[];
+  /**
+   * Hasta qué cambio de los valores por defecto se aplicó sobre estos ajustes.
+   * Ausente en lo guardado antes de que existiera este campo.
+   */
+  revision?: number;
 }
 
 export interface MangaSettings {

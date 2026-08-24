@@ -330,3 +330,12 @@ proxear es obligatorio, para el JSON y también para las imágenes.
   y con la marca al tamaño del ícono normal se comía las viñetas de los bordes.
 - **Los íconos grandes fuera del precache**: los pide el sistema al instalar, con red, y no
   la app. Precargarlos llevaba la caché de 297 KiB a 662 KiB sin dar nada offline.
+
+## Catálogo erótico activado por defecto
+
+- **Sube el default y además migra lo ya guardado**: cambiar el valor por defecto no
+  alcanza para quien ya pasó por Ajustes, porque su copia en IndexedDB gana siempre. El
+  campo `revision` marca hasta dónde se aplicaron los cambios, así se aplican una sola vez y
+  no vuelven a encender algo que después se apagó a mano.
+- **No se suma `pornographic`**: es una clasificación aparte en MangaDex, no está en el
+  selector y no se pidió. Son otras ~15.000 obras si alguna vez hace falta.

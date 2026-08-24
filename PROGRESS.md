@@ -190,3 +190,11 @@ despliegue automático en cada push.
 - `index.html` ahora enlaza el favicon (SVG con respaldo PNG) y el ícono de iOS, que antes
   faltaban: la pestaña mostraba el ícono genérico del navegador.
 
+## Catálogo erótico
+
+- La clasificación «Erótico» viene activada de fábrica: el catálogo alcanzable pasa de
+  50.116 a 55.533 obras. Sigue siendo desactivable desde Ajustes.
+- Los ajustes ya guardados se migran una sola vez (`revision` en `CatalogFilters`), así el
+  cambio también llega a una instalación existente.
+- 20 tests unitarios y 13 E2E en verde.
+
