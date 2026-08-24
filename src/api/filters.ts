@@ -13,10 +13,23 @@ export const LANGUAGE_OPTIONS: ReadonlyArray<{ code: string; label: string }> = 
   { code: 'ru', label: 'Ruso' },
 ];
 
+/**
+ * Las cuatro clasificaciones de MangaDex, en orden creciente.
+ *
+ * La diferencia entre las dos últimas está en si el sexo es la obra o le pasa a
+ * la obra: en `erotica` hay desnudos y escenas dentro de una historia normal,
+ * mientras que `pornographic` es hentai, con el acto como contenido principal.
+ * La pista lo dice porque MangaDex no lo documenta en ningún lado.
+ */
 export const RATING_OPTIONS: ReadonlyArray<{ code: string; label: string; hint?: string }> = [
   { code: 'safe', label: 'Todo público' },
-  { code: 'suggestive', label: 'Sugestivo' },
-  { code: 'erotica', label: 'Erótico', hint: 'Suma unas 5.400 obras' },
+  { code: 'suggestive', label: 'Sugestivo', hint: 'Fanservice, sin desnudos explícitos' },
+  { code: 'erotica', label: 'Erótico', hint: 'Desnudos dentro de la historia · unas 5.400 obras' },
+  {
+    code: 'pornographic',
+    label: 'Pornográfico',
+    hint: 'Hentai: el sexo es el contenido · unas 15.100 obras',
+  },
 ];
 
 const DEFAULTS: Omit<CatalogFilters, 'key'> = {

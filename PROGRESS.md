@@ -198,3 +198,9 @@ despliegue automático en cada push.
   cambio también llega a una instalación existente.
 - 20 tests unitarios y 13 E2E en verde.
 
+## Clasificación pornográfica
+
+- Cuarta opción en Ajustes → Contenido, apagada de fábrica. Encenderla suma unas 15.100
+  obras en los idiomas configurados.
+- Las cuatro opciones ahora llevan una pista que explica qué incluye cada una.
+

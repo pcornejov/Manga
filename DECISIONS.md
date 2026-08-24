@@ -339,3 +339,11 @@ proxear es obligatorio, para el JSON y también para las imágenes.
   no vuelven a encender algo que después se apagó a mano.
 - **No se suma `pornographic`**: es una clasificación aparte en MangaDex, no está en el
   selector y no se pidió. Son otras ~15.000 obras si alguna vez hace falta.
+
+## Clasificación pornográfica como cuarta opción
+
+- **Se agrega apagada**: subir el catálogo erótico se pidió explícitamente; ésta se pidió
+  como opción. Encenderla sola sería decidir por el usuario qué quiere ver.
+- **Las pistas explican la diferencia**: MangaDex no documenta qué separa `erotica` de
+  `pornographic` — su propia API define «erotica» como «Erotica content». La pista de cada
+  opción lo dice en una línea, que es donde hace falta saberlo.
