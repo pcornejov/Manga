@@ -69,6 +69,15 @@ const CAPITULOS = [
   capitulo('3', 'cap-3', 2),
 ];
 
+/** Catálogo largo para explorar: dos páginas de 24 y sobra, para probar el scroll. */
+const CATALOGO = [
+  manga(MANGA_ID, 'Obra de prueba'),
+  manga(OTRO_ID, 'Obra licenciada'),
+  ...Array.from({ length: 38 }, (_, i) =>
+    manga(`33333333-3333-3333-3333-${String(i).padStart(12, '0')}`, `Obra ${i + 1}`),
+  ),
+];
+
 /** PNG de 1x1 gris: alcanza para comprobar que la página se pintó. */
 const PIXEL = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
@@ -137,8 +146,17 @@ export async function stubApi(page: Page): Promise<void> {
     }
 
     if (ruta === '/manga') {
-      const data = [manga(MANGA_ID, 'Obra de prueba'), manga(OTRO_ID, 'Obra licenciada')];
-      return json(route, { result: 'ok', response: 'collection', data, limit: 20, offset: 0, total: data.length });
+      // Sólo la grilla paginada manda `offset`, y sólo ella recibe la lista larga:
+      // devolvérsela también al resto del inicio dispararía decenas de
+      // verificaciones que dejarían la búsqueda encolada detrás.
+      if (!url.searchParams.has('offset')) {
+        const data = [manga(MANGA_ID, 'Obra de prueba'), manga(OTRO_ID, 'Obra licenciada')];
+        return json(route, { result: 'ok', response: 'collection', data, limit: 20, offset: 0, total: data.length });
+      }
+      const limit = Number(url.searchParams.get('limit') ?? 24);
+      const offset = Number(url.searchParams.get('offset') ?? 0);
+      const data = CATALOGO.slice(offset, offset + limit);
+      return json(route, { result: 'ok', response: 'collection', data, limit, offset, total: CATALOGO.length });
     }
 
     return json(route, { result: 'ok', response: 'collection', data: [], limit: 0, offset: 0, total: 0 });

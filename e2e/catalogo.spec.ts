@@ -90,3 +90,16 @@ test('los atajos del inicio filtran sin pasar por la búsqueda', async ({ page }
   await expect(page.getByRole('heading', { name: 'Novedades' })).toBeVisible();
 });
 
+test('la grilla de un atajo crece al bajar', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Erótico' }).click();
+
+  const tarjetas = page.locator('section a[href^="/manga/"]');
+  await expect(tarjetas).toHaveCount(24);
+
+  // Al llegar abajo se pide la página siguiente sola, hasta agotar la lista.
+  await page.mouse.wheel(0, 8_000);
+  await expect(tarjetas).toHaveCount(40);
+  await expect(page.getByText('No hay más obras acá.')).toBeVisible();
+});
+

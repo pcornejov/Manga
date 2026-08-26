@@ -214,44 +214,33 @@ export async function getPopular(signal?: AbortSignal, limit = 24): Promise<Mang
   return body.data;
 }
 
-/** Obras de un género, ordenadas por seguidores. También hay que filtrarlas. */
-export async function getByTag(
-  tagId: string,
-  signal?: AbortSignal,
-  limit = 24,
-): Promise<Manga[]> {
-  const body = await apiGet<CollectionResponse<Manga>>(
-    '/manga',
-    {
-      includedTags: [tagId],
-      'order[followedCount]': 'desc',
-      hasAvailableChapters: true,
-      availableTranslatedLanguage: translatedLanguages(),
-      contentRating: contentRating(),
-      includes: ['cover_art'],
-      limit,
-    },
-    signal,
-  );
-  return body.data;
+/** Con qué se acota una exploración del catálogo. Todo opcional y combinable. */
+export interface BrowseFilter {
+  tagId?: string;
+  status?: string;
+  rating?: string;
 }
 
 /**
- * Atajos del inicio: obras filtradas por estado de publicación o por
- * clasificación de contenido.
+ * Una página del catálogo, para la grilla que crece al bajar.
  *
- * Cuando se pide una clasificación va explícita y no la de los ajustes: tocar
+ * Devuelve el `total` además de las obras: sin él no hay forma de saber cuándo
+ * dejar de pedir, y la grilla seguiría llamando contra el final de la lista.
+ *
+ * La clasificación, cuando se pide, va explícita y no la de los ajustes: tocar
  * «Pornográfico» ya es pedir esas obras, y si dependiera del ajuste el atajo
- * devolvería una fila vacía a quien no lo tenga encendido.
+ * devolvería una grilla vacía a quien no lo tenga encendido.
  */
-export async function getCollection(
-  filtro: { status?: string; rating?: string },
+export async function browse(
+  filtro: BrowseFilter,
+  offset = 0,
   signal?: AbortSignal,
   limit = 24,
-): Promise<Manga[]> {
+): Promise<{ items: Manga[]; total: number }> {
   const body = await apiGet<CollectionResponse<Manga>>(
     '/manga',
     {
+      ...(filtro.tagId === undefined ? {} : { includedTags: [filtro.tagId] }),
       ...(filtro.status === undefined ? {} : { status: [filtro.status] }),
       'order[followedCount]': 'desc',
       hasAvailableChapters: true,
@@ -259,10 +248,11 @@ export async function getCollection(
       contentRating: filtro.rating === undefined ? contentRating() : [filtro.rating],
       includes: ['cover_art'],
       limit,
+      offset,
     },
     signal,
   );
-  return body.data;
+  return { items: body.data, total: body.total };
 }
 
 /** Lista de géneros. Es fija, así que se pide una sola vez por sesión. */

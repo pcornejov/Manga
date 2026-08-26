@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MangaDexError } from '../api/client';
 import {
-  getByTag,
-  getCollection,
+  type BrowseFilter,
   getGenres,
   getPopular,
   getRecentlyUpdated,
@@ -13,6 +12,7 @@ import {
   searchManga,
 } from '../api/mangadex';
 import type { Manga, Tag } from '../api/types';
+import CollectionGrid from '../components/CollectionGrid';
 import DiscoverySection from '../components/DiscoverySection';
 import FeaturedManga from '../components/FeaturedManga';
 import Icon from '../components/Icon';
@@ -99,15 +99,11 @@ export default function HomePage() {
   const loadRecent = useCallback((signal: AbortSignal) => getRecentlyUpdated(signal), []);
   const loadPopular = useCallback((signal: AbortSignal) => getPopular(signal), []);
   const loadTopRated = useCallback((signal: AbortSignal) => getTopRated(signal), []);
-  const loadSeleccion = useCallback(
-    (signal: AbortSignal) => {
-      if (seleccion === null) return Promise.resolve([]);
-      return seleccion.kind === 'genre'
-        ? getByTag(seleccion.tag.id, signal)
-        : getCollection(seleccion.preset.filtro, signal);
-    },
-    [seleccion],
-  );
+  // Estable entre renders: la grilla lo usa de disparador para reiniciarse.
+  const filtroSeleccion = useMemo<BrowseFilter | null>(() => {
+    if (seleccion === null) return null;
+    return seleccion.kind === 'genre' ? { tagId: seleccion.tag.id } : seleccion.preset.filtro;
+  }, [seleccion]);
 
   useEffect(() => {
     if (debouncedQuery.length < 2) {
@@ -332,15 +328,15 @@ export default function HomePage() {
             )}
           </div>
 
-          {seleccion !== null ? (
-            <DiscoverySection
+          {seleccion !== null && filtroSeleccion !== null ? (
+            <CollectionGrid
               key={seleccion.kind === 'genre' ? seleccion.tag.id : seleccion.preset.id}
               title={
                 seleccion.kind === 'genre'
                   ? pickLocalized(seleccion.tag.attributes.name)
                   : seleccion.preset.label
               }
-              load={loadSeleccion}
+              filtro={filtroSeleccion}
               verify={seleccion.kind === 'genre' ? true : seleccion.preset.verify}
               emptyDetail="Las obras más seguidas de esta selección están licenciadas."
             />

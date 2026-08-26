@@ -213,3 +213,10 @@ despliegue automático en cada push.
   de forma intermitente, ahora reintenta el clic: el botón se remonta mientras el índice de
   página se asienta.
 
+## Grilla que crece
+
+- Los atajos y los géneros abren una grilla de tres columnas que sigue trayendo obras al
+  llegar al final, de a 24. Antes eran como mucho 18 en un carrusel horizontal.
+- 20 tests unitarios y 15 E2E en verde (uno nuevo: la grilla crece al bajar hasta agotar la
+  lista).
+

@@ -363,3 +363,21 @@ proxear es obligatorio, para el JSON y también para las imágenes.
   23 de 24 y el chequeo sólo retrasaría la fila sin sacar casi nada.
 - **Los otros dos atajos siguen a mano con uno activo**: son tres y saltar de uno a otro es
   para lo que están. Los géneros no, que son veinticinco y taparían el resultado.
+
+## Grilla en vez de carrusel para atajos y géneros
+
+- **Grilla de tres que crece al bajar**: el carrusel horizontal mostraba como mucho 18 obras y
+  había que arrastrar veinte veces para verlas. Acá se viene a recorrer, y recorrer se hace
+  hacia abajo. Los tres carruseles del inicio se quedan como están: ahí se pasa de largo, no
+  se busca.
+- **Centinela con `IntersectionObserver` y 600 px de margen**: la página siguiente ya está
+  cuando se llega al final. Si una página rinde poco tras verificar, el centinela sigue a la
+  vista y pide la próxima solo, sin lógica de reintento.
+- **Se verifica antes de pintar y de a nueve**: en una grilla vertical, las tarjetas que
+  desaparecen bajo el pulgar mueven todo lo que está debajo. Verificar cuesta un pedido por
+  obra y la cola admite cinco por segundo, así que hacerlo de a veinticuatro dejaba cinco
+  segundos de esqueletos; nueve es una pantalla de tres columnas.
+- **El `total` viaja con la página**: sin él no hay forma de saber cuándo dejar de pedir y la
+  grilla seguiría llamando contra el final de la lista.
+- **El fixture largo sólo responde a pedidos con `offset`**: dárselo también al resto del
+  inicio disparaba decenas de verificaciones y la búsqueda quedaba encolada detrás.
