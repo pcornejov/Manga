@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MangaDexError } from '../api/client';
 import {
   getByTag,
+  getCollection,
   getGenres,
   getPopular,
   getRecentlyUpdated,
@@ -38,6 +39,43 @@ const DEMOGRAPHIC_FILTERS = [
   { value: 'josei', label: 'Josei' },
 ] as const;
 
+/**
+ * Atajos: colecciones que no son un género y que si no habría que armar a mano
+ * con la búsqueda cada vez.
+ *
+ * `verify` comprueba obra por obra que se pueda abrir. Hace falta en las
+ * terminadas, donde medimos que sólo 13 de las 24 más seguidas son leíbles —el
+ * resto están licenciadas—, y no en las otras dos, donde son 23 de 24 y el
+ * chequeo sólo retrasaría la fila.
+ */
+const PRESETS = [
+  { id: 'completed', label: 'Terminadas', filtro: { status: 'completed' }, verify: true },
+  { id: 'erotica', label: 'Erótico', filtro: { rating: 'erotica' }, verify: false },
+  { id: 'pornographic', label: 'Pornográfico', filtro: { rating: 'pornographic' }, verify: false },
+] as const;
+
+type Preset = (typeof PRESETS)[number];
+
+/** Lo que se está mirando cuando no es el inicio suelto. */
+type Seleccion = { kind: 'genre'; tag: Tag } | { kind: 'preset'; preset: Preset };
+
+/**
+ * Píldora de atajo. El punto de acento la separa de las de género, que son las
+ * otras veinticinco de la misma fila.
+ */
+function PresetChip({ preset, onClick }: { preset: Preset; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="chip bg-ink-700 font-medium text-ink-200 ring-1 ring-inset ring-ink-600 hover:bg-ink-600"
+    >
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent" />
+      {preset.label}
+    </button>
+  );
+}
+
 export default function HomePage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Manga[]>([]);
@@ -48,7 +86,7 @@ export default function HomePage() {
   const [genres, setGenres] = useState<Tag[]>([]);
   const [status_, setStatusFilter] = useState('');
   const [demographic, setDemographic] = useState('');
-  const [activeGenre, setActiveGenre] = useState<Tag | null>(null);
+  const [seleccion, setSeleccion] = useState<Seleccion | null>(null);
   const debouncedQuery = useDebounce(query.trim(), 400);
 
   useEffect(() => {
@@ -61,9 +99,14 @@ export default function HomePage() {
   const loadRecent = useCallback((signal: AbortSignal) => getRecentlyUpdated(signal), []);
   const loadPopular = useCallback((signal: AbortSignal) => getPopular(signal), []);
   const loadTopRated = useCallback((signal: AbortSignal) => getTopRated(signal), []);
-  const loadGenre = useCallback(
-    (signal: AbortSignal) => getByTag(activeGenre?.id ?? '', signal),
-    [activeGenre],
+  const loadSeleccion = useCallback(
+    (signal: AbortSignal) => {
+      if (seleccion === null) return Promise.resolve([]);
+      return seleccion.kind === 'genre'
+        ? getByTag(seleccion.tag.id, signal)
+        : getCollection(seleccion.preset.filtro, signal);
+    },
+    [seleccion],
   );
 
   useEffect(() => {
@@ -223,46 +266,83 @@ export default function HomePage() {
         </>
       ) : (
         <>
-          {!activeGenre ? <FeaturedManga /> : null}
+          {seleccion === null ? <FeaturedManga /> : null}
 
-          {/* Fila que se desplaza: 25 géneros en bloque empujaban el contenido
-              fuera de la pantalla antes de que se viera una sola portada. */}
-          {genres.length > 0 ? (
-            <div className="no-scrollbar -mx-4 mb-2 flex gap-2 overflow-x-auto px-4 pb-1">
-              {activeGenre ? (
+          {/* Una sola fila que se desplaza: primero los atajos, después los 25
+              géneros. En bloque empujaban el contenido fuera de la pantalla
+              antes de que se viera una sola portada. */}
+          <div className="no-scrollbar -mx-4 mb-2 flex items-center gap-2 overflow-x-auto px-4 pb-1">
+            {seleccion !== null ? (
+              <>
                 <button
                   type="button"
                   onClick={() => {
-                    setActiveGenre(null);
+                    setSeleccion(null);
                   }}
                   className="chip chip-on font-medium"
                 >
-                  ✕ {pickLocalized(activeGenre.attributes.name)}
+                  ✕{' '}
+                  {seleccion.kind === 'genre'
+                    ? pickLocalized(seleccion.tag.attributes.name)
+                    : seleccion.preset.label}
                 </button>
-              ) : (
-                genres.map((genre) => (
+                {/* Los otros atajos siguen a mano: son tres y saltar de uno a
+                    otro es justamente para lo que están. Los géneros no, que son
+                    veinticinco y taparían el resultado. */}
+                {PRESETS.filter(
+                  (preset) => seleccion.kind !== 'preset' || preset.id !== seleccion.preset.id,
+                ).map((preset) => (
+                  <PresetChip
+                    key={preset.id}
+                    preset={preset}
+                    onClick={() => {
+                      setSeleccion({ kind: 'preset', preset });
+                    }}
+                  />
+                ))}
+              </>
+            ) : (
+              <>
+                {PRESETS.map((preset) => (
+                  <PresetChip
+                    key={preset.id}
+                    preset={preset}
+                    onClick={() => {
+                      setSeleccion({ kind: 'preset', preset });
+                    }}
+                  />
+                ))}
+                {/* Separa los atajos de los géneros sin gastar una fila entera. */}
+                {genres.length > 0 ? (
+                  <span aria-hidden className="h-5 w-px shrink-0 bg-ink-600" />
+                ) : null}
+                {genres.map((genre) => (
                   <button
                     key={genre.id}
                     type="button"
                     onClick={() => {
-                      setActiveGenre(genre);
+                      setSeleccion({ kind: 'genre', tag: genre });
                     }}
                     className="chip chip-off"
                   >
                     {pickLocalized(genre.attributes.name)}
                   </button>
-                ))
-              )}
-            </div>
-          ) : null}
+                ))}
+              </>
+            )}
+          </div>
 
-          {activeGenre ? (
+          {seleccion !== null ? (
             <DiscoverySection
-              key={activeGenre.id}
-              title={pickLocalized(activeGenre.attributes.name)}
-              load={loadGenre}
-              verify
-              emptyDetail="Las obras más seguidas de este género están licenciadas."
+              key={seleccion.kind === 'genre' ? seleccion.tag.id : seleccion.preset.id}
+              title={
+                seleccion.kind === 'genre'
+                  ? pickLocalized(seleccion.tag.attributes.name)
+                  : seleccion.preset.label
+              }
+              load={loadSeleccion}
+              verify={seleccion.kind === 'genre' ? true : seleccion.preset.verify}
+              emptyDetail="Las obras más seguidas de esta selección están licenciadas."
             />
           ) : (
             <>

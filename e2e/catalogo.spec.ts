@@ -61,3 +61,32 @@ test('la ficha propone el capítulo que toca y destaca su fila', async ({ page }
   await continuar.click();
   await expect(page).toHaveURL(/\/read\/cap-2$/);
 });
+
+test('los atajos del inicio filtran sin pasar por la búsqueda', async ({ page }) => {
+  const consultas: string[] = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/api/manga') consultas.push(url.search);
+  });
+
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Terminadas' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Pornográfico' }).click();
+  await expect(page.getByRole('heading', { name: 'Pornográfico' })).toBeVisible();
+
+  // La clasificación va explícita: el atajo tiene que funcionar aunque esté
+  // apagada en Ajustes.
+  await expect
+    .poll(() => consultas.some((q) => q.includes('contentRating%5B%5D=pornographic')))
+    .toBe(true);
+
+  await page.getByRole('button', { name: 'Terminadas' }).click();
+  await expect(page.getByRole('heading', { name: 'Terminadas' })).toBeVisible();
+  await expect.poll(() => consultas.some((q) => q.includes('status%5B%5D=completed'))).toBe(true);
+
+  // La ✕ devuelve al inicio con sus carruseles.
+  await page.getByRole('button', { name: '✕ Terminadas' }).click();
+  await expect(page.getByRole('heading', { name: 'Novedades' })).toBeVisible();
+});
+

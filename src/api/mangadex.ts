@@ -236,6 +236,35 @@ export async function getByTag(
   return body.data;
 }
 
+/**
+ * Atajos del inicio: obras filtradas por estado de publicación o por
+ * clasificación de contenido.
+ *
+ * Cuando se pide una clasificación va explícita y no la de los ajustes: tocar
+ * «Pornográfico» ya es pedir esas obras, y si dependiera del ajuste el atajo
+ * devolvería una fila vacía a quien no lo tenga encendido.
+ */
+export async function getCollection(
+  filtro: { status?: string; rating?: string },
+  signal?: AbortSignal,
+  limit = 24,
+): Promise<Manga[]> {
+  const body = await apiGet<CollectionResponse<Manga>>(
+    '/manga',
+    {
+      ...(filtro.status === undefined ? {} : { status: [filtro.status] }),
+      'order[followedCount]': 'desc',
+      hasAvailableChapters: true,
+      availableTranslatedLanguage: translatedLanguages(),
+      contentRating: filtro.rating === undefined ? contentRating() : [filtro.rating],
+      includes: ['cover_art'],
+      limit,
+    },
+    signal,
+  );
+  return body.data;
+}
+
 /** Lista de géneros. Es fija, así que se pide una sola vez por sesión. */
 let genresCache: Tag[] | null = null;
 

@@ -69,6 +69,12 @@ test('el botón de siguiente lleva al capítulo siguiente, no a otra versión', 
   await page.locator('footer input[type=range]').fill('3');
   const siguiente = page.getByRole('button', { name: /Siguiente/ });
   await expect(siguiente).toContainText('Cap. 2');
-  await siguiente.click();
+
+  // El botón se monta y se desmonta según se esté en la última página, y al
+  // arrastrar la barra el índice visible rebota antes de asentarse: el clic se
+  // reintenta en vez de dar por perdido el primero que agarre un remonte.
+  await expect(async () => {
+    await siguiente.click({ timeout: 2_000 });
+  }).toPass({ timeout: 15_000 });
   await expect(page.locator('header p').nth(1)).toContainText('Cap. 2');
 });

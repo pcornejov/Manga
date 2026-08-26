@@ -204,3 +204,12 @@ despliegue automático en cada push.
   obras en los idiomas configurados.
 - Las cuatro opciones ahora llevan una pista que explica qué incluye cada una.
 
+## Atajos del inicio
+
+- Tres píldoras al principio de la fila de géneros: **Terminadas**, **Erótico** y
+  **Pornográfico**. Cada una abre su propia fila de obras ordenada por seguidores.
+- El atajo de clasificación no depende del ajuste de contenido: funciona esté encendido o no.
+- 20 tests unitarios y 14 E2E en verde. El test del botón «Siguiente» del lector, que fallaba
+  de forma intermitente, ahora reintenta el clic: el botón se remonta mientras el índice de
+  página se asienta.
+

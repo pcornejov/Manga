@@ -347,3 +347,19 @@ proxear es obligatorio, para el JSON y también para las imágenes.
 - **Las pistas explican la diferencia**: MangaDex no documenta qué separa `erotica` de
   `pornographic` — su propia API define «erotica» como «Erotica content». La pista de cada
   opción lo dice en una línea, que es donde hace falta saberlo.
+
+## Atajos del inicio
+
+- **En la misma fila que los géneros y no en una propia**: en el teléfono, una segunda fila
+  de píldoras empujaba el primer carrusel fuera de la pantalla. Van primero, con un punto de
+  acento y un separador que los distingue de los veinticinco géneros.
+- **La clasificación va explícita y no la de Ajustes**: tocar «Pornográfico» ya es pedir esas
+  obras. Si dependiera del ajuste, el atajo devolvería una fila vacía a quien no lo tenga
+  encendido. Los ajustes siguen gobernando todo lo demás: búsqueda, géneros y los tres
+  carruseles del inicio.
+- **Sólo «Terminadas» comprueba obra por obra**: se midió sobre las 24 más seguidas de cada
+  atajo. En las terminadas apenas 13 son leíbles —el resto están licenciadas, que es
+  justamente lo que le pasa a lo que ya terminó—, mientras que en erótico y pornográfico son
+  23 de 24 y el chequeo sólo retrasaría la fila sin sacar casi nada.
+- **Los otros dos atajos siguen a mano con uno activo**: son tres y saltar de uno a otro es
+  para lo que están. Los géneros no, que son veinticinco y taparían el resultado.
